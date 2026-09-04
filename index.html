@@ -283,6 +283,11 @@
   }
   .setting-item .label { font-size: 14px; color: #111827; }
   .setting-item .desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .setting-item.setting-block { display: block; }
+  .setting-block .form-input { margin-top: 10px; }
+  .ai-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .ai-actions .btn { flex: 1; }
+  .ai-status { font-size: 12px; color: #6b7280; margin-top: 8px; }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -603,6 +608,17 @@
       </div>
     </div>
 
+    <div class="setting-item setting-block">
+      <div class="label">Gemini AI</div>
+      <div class="desc">Opsional · membantu memahami kalimat bebas saat mencatat transaksi</div>
+      <input type="password" id="geminiApiKey" class="form-input" placeholder="Tempel Gemini API key" autocomplete="off" spellcheck="false" />
+      <div class="ai-actions">
+        <button class="btn btn-secondary" onclick="saveGeminiKey()">Simpan Key</button>
+        <button class="btn btn-primary" onclick="testGeminiKey()">Tes AI</button>
+      </div>
+      <div class="ai-status" id="geminiStatus">Key hanya disimpan di perangkat ini.</div>
+    </div>
+
     <div class="setting-item">
       <div>
         <div class="label">Ekspor Data</div>
@@ -719,6 +735,74 @@ const DB = {
   }
 };
 let state = DB.load();
+
+/* ============ AI — GEMINI DEVELOPER API (OPSIONAL) ============ */
+const GeminiAI = {
+  storageKey: 'catataja_gemini_api_key',
+  model: 'gemini-2.5-flash-lite',
+
+  getKey() {
+    return (localStorage.getItem(this.storageKey) || '').trim();
+  },
+
+  setKey(value) {
+    const key = (value || '').trim();
+    if (key) localStorage.setItem(this.storageKey, key);
+    else localStorage.removeItem(this.storageKey);
+  },
+
+  async parse(text) {
+    const key = this.getKey();
+    if (!key) return null;
+
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/'
+      + this.model + ':generateContent?key=' + encodeURIComponent(key);
+    const prompt = `Kamu adalah parser transaksi keuangan berbahasa Indonesia. Ubah kalimat pengguna menjadi JSON saja, tanpa markdown.
+Skema JSON:
+{"intent":"create_income|create_expense|create_shopping_list|create_note|query_today|query_week|query_month|query_income|query_expense|query_balance|query_shopping|query_unpurchased|unknown","name":null,"amount":null,"qty":null,"unit":null,"category":null,"items":[],"content":null}
+Aturan: amount harus angka rupiah tanpa titik; qty harus angka; gunakan null jika tidak ada. Untuk daftar belanja, items berisi objek {"name":string,"qty":number|null,"unit":string|null}. Kalimat pengguna: ${text}`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 256, responseMimeType: 'application/json' }
+      })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error('Gemini ' + response.status + ': ' + detail.slice(0, 160));
+    }
+    const data = await response.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    const parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '').trim());
+    return this.normalize(parsed, text);
+  },
+
+  normalize(value, raw) {
+    const allowed = new Set(['create_income','create_expense','create_shopping_list','create_note',
+      'query_today','query_week','query_month','query_income','query_expense','query_balance',
+      'query_shopping','query_unpurchased','unknown']);
+    const result = value && typeof value === 'object' ? value : {};
+    const intent = allowed.has(result.intent) ? result.intent : 'unknown';
+    const parsed = { intent, raw };
+    if (intent === 'create_income' || intent === 'create_expense') {
+      parsed.name = typeof result.name === 'string' ? result.name.trim() || null : null;
+      parsed.amount = Number.isFinite(Number(result.amount)) ? Math.round(Number(result.amount)) : null;
+      parsed.qty = Number.isFinite(Number(result.qty)) ? Number(result.qty) : null;
+      parsed.unit = typeof result.unit === 'string' ? result.unit : null;
+      parsed.category = typeof result.category === 'string' && result.category ? result.category : NLP.guessCategory(parsed.name, intent);
+    } else if (intent === 'create_shopping_list') {
+      parsed.items = Array.isArray(result.items) ? result.items.filter(i => i && typeof i.name === 'string').map(i => ({
+        name: i.name.trim(), qty: Number.isFinite(Number(i.qty)) ? Number(i.qty) : null, unit: typeof i.unit === 'string' ? i.unit : null
+      })) : [];
+    } else if (intent === 'create_note') {
+      parsed.content = typeof result.content === 'string' ? result.content.trim() : '';
+    }
+    return parsed;
+  }
+};
 
 /* ============ 2. UTILS ============ */
 function formatRupiah(n) {
@@ -1168,8 +1252,17 @@ const Voice = {
 const Intent = {
   pendingResult: null,
 
-  handle(text) {
-    const parsed = NLP.parse(text);
+  async handle(text) {
+    let parsed = NLP.parse(text);
+    if (GeminiAI.getKey()) {
+      try {
+        const aiParsed = await GeminiAI.parse(text);
+        if (aiParsed) parsed = aiParsed;
+      } catch (error) {
+        console.warn('[GeminiAI] fallback ke parser lokal:', error);
+        showToast('AI tidak tersedia, memakai parser lokal.');
+      }
+    }
     console.log('[Intent]', parsed);
 
     switch (parsed.intent) {
@@ -1622,6 +1715,40 @@ function renderRecap() {
 function renderSettings() {
   document.getElementById('settingName').textContent = state.user.name || '-';
   document.getElementById('settingTxCount').textContent = state.transactions.length + ' transaksi';
+  const keyInput = document.getElementById('geminiApiKey');
+  const status = document.getElementById('geminiStatus');
+  if (keyInput) keyInput.value = GeminiAI.getKey();
+  if (status) status.textContent = GeminiAI.getKey()
+    ? 'AI aktif · ' + GeminiAI.model
+    : 'Key hanya disimpan di perangkat ini.';
+}
+
+function saveGeminiKey() {
+  const input = document.getElementById('geminiApiKey');
+  GeminiAI.setKey(input ? input.value : '');
+  renderSettings();
+  showToast(GeminiAI.getKey() ? 'Gemini AI diaktifkan ✓' : 'Gemini AI dimatikan');
+}
+
+async function testGeminiKey() {
+  const input = document.getElementById('geminiApiKey');
+  GeminiAI.setKey(input ? input.value : '');
+  if (!GeminiAI.getKey()) {
+    showToast('Masukkan Gemini API key terlebih dahulu.');
+    return;
+  }
+  const status = document.getElementById('geminiStatus');
+  if (status) status.textContent = 'Menghubungi Gemini...';
+  try {
+    const parsed = await GeminiAI.parse('Catat pengeluaran beli kopi lima belas ribu');
+    if (!parsed || parsed.intent === 'unknown') throw new Error('Respons AI tidak valid');
+    if (status) status.textContent = 'AI aktif · ' + GeminiAI.model;
+    showToast('Tes AI berhasil ✓');
+  } catch (error) {
+    if (status) status.textContent = 'Key atau kuota bermasalah.';
+    showToast('Tes AI gagal. Periksa key dan kuota.');
+    console.warn('[GeminiAI] test gagal:', error);
+  }
 }
 
 /* ============ 8. ACTIONS ============ */

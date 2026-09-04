@@ -22,3 +22,12 @@ python3 -m http.server 8080
 ```
 
 Buka `http://localhost:8080` di browser.
+
+## Mengaktifkan Gemini AI
+
+1. Buat API key Gemini di [Google AI Studio](https://aistudio.google.com/apikey).
+2. Buka aplikasi, masuk ke **Lainnya → Pengaturan**.
+3. Tempel key pada bagian **Gemini AI**, lalu tekan **Simpan Key**.
+4. Tekan **Tes AI** untuk memastikan koneksi berhasil.
+
+Aplikasi memakai model `gemini-2.5-flash-lite`. Key disimpan di `localStorage` perangkat pengguna dan tidak disimpan di repository. Untuk penggunaan publik berskala besar, gunakan Firebase AI Logic + App Check atau backend proxy agar key dan kuota lebih terlindungi.
