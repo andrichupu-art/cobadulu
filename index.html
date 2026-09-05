@@ -2148,8 +2148,16 @@ const NLP = {
     const source = String(text || '').trim();
     if (!source) return null;
 
+    // Prioritas 1: format eksplisit Rp+angka (mis. "Rp20.000", "Rp 100.000")
+    // Format ini paling tidak ambigu — langsung ambil.
+    const rpMatch = source.match(/[Rr][Pp]\.?\s*([\d.,]+)/);
+    if (rpMatch) {
+      const n = parseInt(rpMatch[1].replace(/\./g, '').replace(',', ''));
+      if (n >= 1000) return n;
+    }
+
+    // Prioritas 2: angka setelah satuan unit
     // Pada ucapan "dua kg dua puluh ribu", harga berada setelah satuan.
-    // Ambil bagian itu agar angka qty tidak terbaca sebagai harga.
     const afterUnit = source.match(/\b(?:kilo|kg|kilogram|gram|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\b\s+(.+)$/i);
     if (afterUnit) {
       const priceText = afterUnit[1].trim();
@@ -2184,7 +2192,8 @@ const NLP = {
       // Contoh: "pisang 1kg 20000 jagung 3kg 30000 tempe 2kg 10000"
       // ⭐ FIX: pattern harga harus robust untuk "20.000" format Indonesia
       // Regex: nama (1-3 kata non-angka) + opsional qty + harga (angka >= 100 atau "X ribu/rb")
-      const segRe = /([a-zA-Z\u00C0-\u024F]+(?:\s+[a-zA-Z\u00C0-\u024F]+){0,2})\s+(?:(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|gram|g|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\s+)?(\d+(?:[.,\s]\d{3})*(?:[.,]\d+)?(?:\s*(?:ribu|rb|juta|jt))?|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas)\s+(?:ribu|ratus\s+ribu|juta)\b)/gi;
+      // segRe: nama + opsional qty+unit + harga (angka, "X ribu", atau "RpX.000")
+      const segRe = /([a-zA-Z\u00C0-\u024F]+(?:\s+[a-zA-Z\u00C0-\u024F]+){0,2})\s+(?:(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|gram|g|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\s+)?(?:[Rr][Pp]\.?\s*)?(\d+(?:[.,\s]\d{3})*(?:[.,]\d+)?(?:\s*(?:ribu|rb|juta|jt))?|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas)\s+(?:ribu|ratus\s+ribu|juta)\b)/gi;
       const matches = [...t.matchAll(segRe)];
       if (matches.length >= 2) {
         return matches.map(m => {
