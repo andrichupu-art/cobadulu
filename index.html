@@ -1796,15 +1796,27 @@ const NLP = {
       }
     }
 
-    // fallback: angka digit biasa
-    const digitMatch = t.match(/\d+(?:[.,]\d+)?/);
-    if (digitMatch) {
-      const n = parseFloat(digitMatch[0].replace(',', '.'));
-      if (!isNaN(n)) {
-        // kalau angka kecil (< 100), mungkin bukan harga
-        return Math.round(n);
+    // fallback: cari semua angka, ambil yang TERBESAR atau TERAKHIR
+    // skip angka yang diikuti satuan (kg, g, liter, dll) karena itu quantity
+    const units = /\b(kilo|kg|kilogram|gram|g|bungkus|pak|pcs|bij|butir|buah|liter|l|batang|kotak|box|plastik|ikat)\b/i;
+    const allMatches = [...t.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:(kilo|kg|kilogram|gram|g|bungkus|pak|pcs|bij|butir|buah|liter|l|batang|kotak|box|plastik|ikat)?)/gi)];
+    
+    // filter: ambil angka yang TIDAK diikuti unit
+    const validNumbers = [];
+    for (const match of allMatches) {
+      const num = parseFloat(match[1].replace(',', '.'));
+      const hasUnit = match[2] && match[2].length > 0;
+      if (!isNaN(num) && !hasUnit) {
+        validNumbers.push(num);
       }
     }
+
+    // jika ada angka valid, ambil yang TERBESAR (kemungkinan harga)
+    if (validNumbers.length > 0) {
+      const maxNum = Math.max(...validNumbers);
+      return Math.round(maxNum);
+    }
+
     return null;
   },
 
