@@ -1381,11 +1381,11 @@ function showToast(msg, duration = 2200) {
 
 /* ============ LANG — DETEKSI BAHASA OTOMATIS ============ */
 const Lang = {
-  // kata kunci khas tiap bahasa — diurutkan dari yang paling spesifik
+  // kata kunci khas tiap bahasa — hanya kata yang EKSKLUSIF untuk bahasa itu
   _signals: {
-    su: /\b(abdi|urang|kuring|meli|ngical|pangaluaran|pangasilan|duit|ieu|tah|atuh|wae|euy|teu|tara|naha|saha|naon|dimana|kumaha|ulang\s*deui|deui|hargana|sabaraha|sareng|jeung|nyaeta|maneh|anjeun|eta)\b/i,
-    jv: /\b(kulo|dalem|aku|tuku|adol|bayar|duwit|iki|kuwi|kae|lan|karo|seko|saka|nggo|kanggo|pira|piro|regane|baleni|mbaleni|meneh|maneh|njupuk|ngedol|nuku|blanja|belanja)\b/i,
-    en: /\b(buy|bought|sell|sold|spend|spent|income|expense|grocery|list|total|balance|today|week|month|repeat|again|what|how much|price|cost|paid|pay|record|note|add|create)\b/i,
+    su: /\b(abdi|urang|kuring|meli|ngical|pangaluaran|pangasilan|ieu\s+teh|atuh|wae|euy|teu\s+acan|teu\s+bisa|naha|sabaraha|kumaha|ulang\s*deui|hargana|sareng|jeung|nyaeta|anjeun|eta\s+teh|bade|mugi|mangga)\b/i,
+    jv: /\b(kulo|dalem|tuku|adol|duwit|iki|kuwi|kae|seko|saka|kanggo\s+opo|pira|piro|regane|baleni|mbaleni|meneh|njupuk|ngedol|nuku|blanja\s+opo|monggo|sampun\s+leres|mboten|inggih)\b/i,
+    en: /\b(buy|bought|sell|sold|spend|spent|income|expense|grocery|total|balance|today|week|month|repeat|again|how\s+much|price|cost|paid|pay|record|note|add|create)\b/i,
   },
 
   // deteksi dari teks, kembalikan kode: 'id' | 'su' | 'jv' | 'en'
@@ -1396,8 +1396,12 @@ const Lang = {
     for (const [lang, re] of Object.entries(this._signals)) {
       const matches = t.match(new RegExp(re.source, 'gi'));
       const score = matches ? matches.length : 0;
+      // butuh minimal 1 sinyal eksklusif untuk bahasa non-Indonesia
       if (score > bestScore) { bestScore = score; best = lang; }
     }
+    // kalau hanya 1 sinyal lemah (1 kata), tetap pakai id sebagai default
+    // kecuali bahasa Inggris atau ada 2+ sinyal jelas
+    if (best !== 'id' && best !== 'en' && bestScore < 2) return 'id';
     return best;
   }
 };
@@ -1415,13 +1419,12 @@ const TTS = {
       noItem: 'barang tidak diketahui',
       noAmount: 'harga tidak diketahui',
       noRepeat: 'Belum ada yang perlu diulang.',
-      expense: (o, name, qty, amount) => `${o} abdi nyatet pangaluaran kanggo ${name}${qty} seharga ${amount}. Tos leres?`,
-      income:  (o, name, qty, amount) => `${o} abdi nyatet pangasilan ti ${name}${qty} senilai ${amount}. Tos leres?`,
-      shopping: (o, count, items) => `${o} abdi nyiapkeun daptar balanja ${count} item: ${items}. Bade disimpen?`,
-      and: 'sareng',
-      qty: (q, u) => ` sabantak ${q}${u ? ' ' + u : ''}`,
+      expense: (o, name, qty, amount) => `${o} saya catat pengeluaran untuk ${name}${qty} seharga ${amount}. Sudah benar?`,
+      income:  (o, name, qty, amount) => `${o} saya catat pemasukan dari ${name}${qty} senilai ${amount}. Sudah benar?`,
+      shopping: (o, count, items) => `${o} saya siapkan daftar belanja ${count} item: ${items}. Mau disimpan?`,
+      and: 'dan',
+      qty: (q, u) => ` sebanyak ${q}${u ? ' ' + u : ''}`,
     },
-    // ↑ Sunda: pakai ttsLang id-ID (browser tidak punya su-ID), kalimat Sunda
     su: {
       ttsLang: 'id-ID',
       openers: ['Muhun,', 'Sae,', 'Okey,', 'Siap,'],
