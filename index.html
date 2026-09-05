@@ -2202,7 +2202,7 @@ const NLP = {
             unit: q.unit,
             category: this.guessCategory(name, baseIntent)
           };
-        }).filter(r => r.name && r.amount);
+        }).filter(r => r.name && r.amount >= 1000);
       }
       return null; // kalimat tunggal, biarkan flow normal
     }
@@ -2243,7 +2243,7 @@ const NLP = {
         unit: q.unit,
         category: this.guessCategory(name, baseIntent)
       };
-    }).filter(r => r.name && r.amount);
+    }).filter(r => r.name && r.amount >= 1000);
 
     return results.length >= 2 ? results : null;
   }
