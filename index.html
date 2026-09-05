@@ -746,10 +746,11 @@
   <section class="page active" id="page-home">
     <div class="home-mic-wrap">
       <div class="home-mic-ring">
-        <button class="voice-btn" id="heroVoiceBtn" onclick="openVoiceModal()" aria-label="Mulai mencatat dengan suara"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></button>
+        <button class="voice-btn" id="heroVoiceBtn" onclick="startDirectVoice()" aria-label="Mulai mencatat dengan suara"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></button>
       </div>
-      <div class="home-hint">Bicara Sekarang</div>
-      <div class="home-example">"Beli bawang 2 kilo 40 ribu"<br/>"Buat daftar belanja tahu, tempe"</div>
+      <div class="home-hint" id="homeHint">Bicara Sekarang</div>
+      <div class="home-example" id="homeExample">"Beli bawang 2 kilo 40 ribu"<br/>"Buat daftar belanja tahu, tempe"</div>
+      <div id="homeTranscript" style="display:none; margin-top:12px; font-size:14px; color:#374151; background:#fff; border:1px solid #eef0f3; border-radius:12px; padding:12px 16px; max-width:280px; text-align:left; font-style:italic;"></div>
 
       <!-- Saldo ringkas — tap buka tab Ringkasan -->
       <button class="home-saldo-pill" onclick="goTo('summary')" aria-label="Buka ringkasan saldo">
@@ -824,7 +825,7 @@
   <section class="page" id="page-shopping">
     <div class="page-title">Daftar Belanja</div>
     <div class="page-sub">Buat daftar dengan bicara, centang otomatis saat dibeli</div>
-    <button class="btn btn-primary btn-block" onclick="openVoiceModal('shopping')" style="margin-bottom:16px;">
+    <button class="btn btn-primary btn-block" onclick="startDirectVoice()" style="margin-bottom:16px;">
       🎙️ Tambah dengan Suara
     </button>
     <div id="shoppingList"></div>
@@ -1696,20 +1697,14 @@ const NLP = {
       }
     }
 
-    // format angka dengan titik sebagai pemisah ribuan: "20.000", "1.500.000"
-    // harus dicek sebelum fallback digitMatch agar "2 kg 20.000" tidak salah ambil angka "2"
-    const dotThousandMatch = t.match(/\b(\d{1,3}(?:\.\d{3})+)\b/);
-    if (dotThousandMatch) {
-      const cleaned = dotThousandMatch[1].replace(/\./g, '');
-      const n = parseInt(cleaned, 10);
-      if (!isNaN(n) && n >= 100) return n;
-    }
-
-    // fallback: angka digit biasa — ambil angka TERBESAR supaya qty tidak mengalahkan harga
-    const allDigits = [...t.matchAll(/\d+(?:[.,]\d+)?/g)].map(m => parseFloat(m[0].replace(',', '.')));
-    if (allDigits.length > 0) {
-      const n = Math.max(...allDigits);
-      if (!isNaN(n)) return Math.round(n);
+    // fallback: angka digit biasa
+    const digitMatch = t.match(/\d+(?:[.,]\d+)?/);
+    if (digitMatch) {
+      const n = parseFloat(digitMatch[0].replace(',', '.'));
+      if (!isNaN(n)) {
+        // kalau angka kecil (< 100), mungkin bukan harga
+        return Math.round(n);
+      }
     }
     return null;
   },
@@ -2109,12 +2104,20 @@ const Voice = {
     const status = document.getElementById('voiceStatus');
     const transcript = document.getElementById('voiceTranscript');
     const btn = document.getElementById('voiceStartBtn');
+    // inline home UI
+    const homeHint = document.getElementById('homeHint');
+    const homeExample = document.getElementById('homeExample');
+    const homeTranscript = document.getElementById('homeTranscript');
 
     if (this.listening) {
       mic && mic.classList.add('listening');
       heroMic && heroMic.classList.add('listening');
       status && (status.textContent = 'Mendengarkan...');
       btn && (btn.textContent = 'Stop');
+      // inline home
+      if (homeHint) homeHint.textContent = 'Mendengarkan...';
+      if (homeExample) homeExample.style.display = 'none';
+      if (homeTranscript) { homeTranscript.style.display = 'block'; homeTranscript.textContent = ''; }
     } else {
       mic && mic.classList.remove('listening');
       heroMic && heroMic.classList.remove('listening');
@@ -2122,14 +2125,25 @@ const Voice = {
       if (full) {
         status && (status.textContent = 'Selesai. Memproses...');
         btn && (btn.textContent = 'Mulai');
+        if (homeHint) homeHint.textContent = 'Memproses...';
+        if (homeTranscript) homeTranscript.textContent = full;
       } else {
         status && (status.textContent = 'Tekan mikrofon untuk mulai bicara');
         btn && (btn.textContent = 'Mulai');
+        // reset inline home
+        if (homeHint) homeHint.textContent = 'Bicara Sekarang';
+        if (homeExample) homeExample.style.display = '';
+        if (homeTranscript) homeTranscript.style.display = 'none';
       }
     }
     if (transcript) {
       const full = (this.finalTranscript + ' ' + this.interimTranscript).trim();
       transcript.textContent = full;
+    }
+    // update interim transcript inline
+    if (homeTranscript && this.listening) {
+      const full = (this.finalTranscript + ' ' + this.interimTranscript).trim();
+      if (full) homeTranscript.textContent = full;
     }
   }
 };
@@ -2323,11 +2337,12 @@ const Intent = {
 
     let actionsHtml = '';
     if (!missing.length) {
-      actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Ubah</button>`;
-      actionsHtml += `<button class="btn btn-primary" onclick="saveTransaction()">Simpan</button>`;
+      actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
+      actionsHtml += `<button class="btn btn-primary" onclick="saveTransaction()">✔ Simpan</button>`;
+      actionsHtml += `<button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="confirmByVoice()">🎙️ Konfirmasi Suara</button>`;
     } else {
       actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
-      actionsHtml += `<button class="btn btn-primary" onclick="askMissingWithVoice()">Jawab dengan Suara</button>`;
+      actionsHtml += `<button class="btn btn-primary" onclick="askMissingWithVoice()">🎙️ Lengkapi dengan Suara</button>`;
     }
     actions.innerHTML = actionsHtml;
 
@@ -2335,8 +2350,13 @@ const Intent = {
     openModal('confirmModal');
 
     // bacakan konfirmasi — hanya kalau data sudah lengkap (nama & harga ada)
+    // lalu otomatis buka mic untuk konfirmasi suara
     if (!missing.length) {
       TTS.confirmTransaction(parsed);
+      // delay agar TTS selesai dulu, lalu mulai rekam konfirmasi
+      Intent._confirmVoiceTimeout = setTimeout(() => {
+        confirmByVoice();
+      }, 3500);
     }
   },
 
@@ -2378,6 +2398,9 @@ const Intent = {
     const names  = items.map(i => i.name).join(', ');
     const totalWords = TTS._amountToWords(total, lang);
     TTS.speak(`${opener} saya catat ${items.length} pengeluaran: ${names}. Total ${totalWords}. Sudah benar?`, lang);
+    Intent._confirmVoiceTimeout = setTimeout(() => {
+      confirmByVoice();
+    }, 4500);
   },
 
   showShoppingConfirm(parsed) {
@@ -2404,13 +2427,17 @@ const Intent = {
 
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
-      <button class="btn btn-primary" onclick="saveShoppingList()">Simpan</button>
+      <button class="btn btn-primary" onclick="saveShoppingList()">✔ Simpan</button>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="confirmByVoice()">🎙️ Konfirmasi Suara</button>
     `;
     this.pendingResult = parsed;
     openModal('confirmModal');
 
     // bacakan daftar belanja sebagai konfirmasi suara
     TTS.confirmShopping(parsed);
+    Intent._confirmVoiceTimeout = setTimeout(() => {
+      confirmByVoice();
+    }, 3500);
   },
 
   askShoppingItems() {
@@ -2751,8 +2778,18 @@ function saveTransaction() {
 
   DB.save(state);
   closeConfirm();
+  resetHomeVoiceUI();
   showToast('Berhasil dicatat ✓');
   renderAll();
+}
+
+function resetHomeVoiceUI() {
+  const homeHint = document.getElementById('homeHint');
+  const homeExample = document.getElementById('homeExample');
+  const homeTranscript = document.getElementById('homeTranscript');
+  if (homeHint) homeHint.textContent = 'Bicara Sekarang';
+  if (homeExample) homeExample.style.display = '';
+  if (homeTranscript) { homeTranscript.style.display = 'none'; homeTranscript.textContent = ''; }
 }
 
 function tryAutoCheckShopping(name) {
@@ -2790,6 +2827,7 @@ function saveShoppingList() {
   state.shoppingLists.unshift(sl);
   DB.save(state);
   closeConfirm();
+  resetHomeVoiceUI();
   showToast('Daftar belanja dibuat ✓');
   renderAll();
 }
@@ -3107,8 +3145,6 @@ function openVoiceModal(mode, options = {}) {
   document.getElementById('voiceTranscript').textContent = '';
   Voice._followUp = null;
   Voice._mode = mode || null;
-  // Sapaan tetap diputar, tetapi perekaman dimulai melalui klik pengguna
-  // agar izin mikrofon browser tidak hilang karena setTimeout.
   if (!options.skipGreeting) {
     const hour = new Date().getHours();
     const greeting = hour < 11 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 19 ? 'Selamat sore' : 'Selamat malam';
@@ -3116,11 +3152,85 @@ function openVoiceModal(mode, options = {}) {
     TTS.speak(`Halo, ${greeting}${name}.`, 'id');
   }
 }
+
+// Langsung mulai rekam dari halaman utama — TANPA popup modal
+function startDirectVoice() {
+  if (Voice.listening) {
+    Voice.stop();
+    return;
+  }
+  TTS.stop();
+  Voice._followUp = null;
+  Voice._mode = null;
+  Voice.start();
+}
 function closeVoiceModal() {
   Voice.stop();
   closeModal('voiceModal');
 }
-function closeConfirm() { TTS.stop(); closeModal('confirmModal'); Intent.pendingResult = null; Intent.pendingBatch = null; }
+function closeConfirm() {
+  TTS.stop();
+  // batalkan auto-confirm suara kalau masih pending
+  if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+  Voice._confirmMode = false;
+  closeModal('confirmModal');
+  Intent.pendingResult = null;
+  Intent.pendingBatch = null;
+}
+
+// Mulai rekam suara untuk konfirmasi (dipanggil otomatis setelah TTS, atau saat tap tombol)
+function confirmByVoice() {
+  if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+  if (!Voice.supported) return;
+  TTS.stop();
+  Voice._confirmMode = true;
+  // pakai voice recognition singkat untuk tangkap "ya/simpan/tidak"
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const r = new SR();
+  r.lang = 'id-ID';
+  r.continuous = false;
+  r.interimResults = false;
+  r.maxAlternatives = 3;
+  // tampilkan status di confirm modal
+  const sub = document.getElementById('confirmSub');
+  if (sub) sub.textContent = '🎙️ Dengarkan... bilang "ya" atau "tidak"';
+  r.onresult = (e) => {
+    const alts = [...e.results[0]].map(a => a.transcript.toLowerCase().trim());
+    handleConfirmVoice(alts);
+  };
+  r.onerror = () => {
+    Voice._confirmMode = false;
+    if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
+  };
+  r.onend = () => { Voice._confirmMode = false; };
+  try { r.start(); } catch(e) {}
+}
+
+function handleConfirmVoice(alts) {
+  const yes = /^(ya|iya|yep|yap|ok|oke|benar|betul|simpan|save|lanjut|setuju|bener|correct|yes)\b/;
+  const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus)\b/;
+  const matched = alts.find(a => yes.test(a));
+  const rejected = alts.find(a => no.test(a));
+  if (matched) {
+    // konfirmasi diterima — simpan sesuai context
+    if (Intent.pendingBatch) {
+      saveBatch();
+    } else if (Intent.pendingResult) {
+      const intent = Intent.pendingResult.intent;
+      if (intent === 'create_shopping_list') saveShoppingList();
+      else saveTransaction();
+    }
+  } else if (rejected) {
+    closeConfirm();
+    showToast('Dibatalkan.');
+    TTS.speak('Oke, dibatalkan.', 'id');
+  } else {
+    // tidak jelas — tanya lagi
+    const sub = document.getElementById('confirmSub');
+    if (sub) sub.textContent = 'Tidak terdengar. Ketuk "Simpan" atau "Konfirmasi Suara"';
+  }
+}
 function toggleVoice() {
   if (Voice.listening) Voice.stop();
   else {
