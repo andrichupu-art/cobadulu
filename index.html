@@ -2396,6 +2396,13 @@ const Intent = {
   async handle(text) {
     // cek "ulangi" dulu sebelum apapun — tidak perlu AI, langsung eksekusi
     const quickIntent = NLP.detectIntent(text);
+    // Setelah jawaban konfirmasi diterima, browser kadang mengirim sisa
+    // ucapan (contoh: "ya benar") sebagai event baru. Jangan anggap sisa
+    // jawaban itu sebagai perintah baru dan jangan buka popup klarifikasi.
+    if (Date.now() < (this._justConfirmedUntil || 0)
+      && /^(ya|iya|yep|yap|ok|oke|benar|betul|simpan|save|sudah\s+benar|bener|yes)\b/i.test((text || '').trim())) {
+      return;
+    }
     const preferenceText = (text || '').toLowerCase().trim();
     if (/\b(jawab|bicara|ngomong)\s+(lebih\s+)?singkat\b/.test(preferenceText)) {
       Memory.setPreference('responseStyle', 'short');
@@ -3500,6 +3507,11 @@ function closeConfirm() {
   if (Intent._confirmCancelTimeout) { clearTimeout(Intent._confirmCancelTimeout); Intent._confirmCancelTimeout = null; }
   // Hentikan mic confirm dan null-kan dulu agar onend confirm tidak restart
   Intent._activeConfirmRecognition = null;
+  // Buang event/result yang terlambat dari sesi konfirmasi. Tanpa guard ini,
+  // suara "ya benar" bisa diteruskan ke handler normal setelah popup ditutup.
+  Voice._ignoreRecognitionUntil = Date.now() + 700;
+  Voice.finalTranscript = '';
+  Voice.interimTranscript = '';
   if (Voice.listening) {
     try { Voice.recognition && Voice.recognition.stop(); } catch (e) {}
   }
@@ -3518,6 +3530,7 @@ function restoreVoiceHandlers() {
   Voice.recognition.maxAlternatives = 1;
   Voice.recognition.interimResults = true;
   Voice.recognition.onresult = (e) => {
+    if (Date.now() < (Voice._ignoreRecognitionUntil || 0)) return;
     let interim = '', final = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const tr = e.results[i][0].transcript;
@@ -3538,6 +3551,11 @@ function restoreVoiceHandlers() {
   Voice.recognition.onend = () => {
     Voice.listening = false;
     Voice.updateUI();
+    if (Date.now() < (Voice._ignoreRecognitionUntil || 0)) {
+      Voice.finalTranscript = '';
+      Voice.interimTranscript = '';
+      return;
+    }
     const full = (Voice.finalTranscript + ' ' + Voice.interimTranscript).trim();
     if (full) {
       if (Voice._followUp) setTimeout(() => handleFollowUp(full, Voice._followUp), 250);
@@ -3736,6 +3754,7 @@ function handleConfirmVoice(alts) {
   if (matched) {
     // Null-kan activeConfirmRecognition lebih dulu agar r.onend tidak restart mic
     Intent._activeConfirmRecognition = null;
+    Intent._justConfirmedUntil = Date.now() + 4000;
     if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
     // konfirmasi diterima — simpan sesuai context
     if (Intent.pendingBatch) {
