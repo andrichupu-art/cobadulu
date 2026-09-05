@@ -3592,24 +3592,32 @@ function confirmByVoice() {
   armConfirmSilenceTimers();
   Voice._confirmMode = true;
   Intent._activeConfirmRecognition = Voice.recognition;
+  // Buffer hasil — Chrome Android sering kirim interim saja tanpa isFinal
+  let _confirmBuffer = '';
   const sub = document.getElementById('confirmSub');
   if (sub) sub.textContent = '🎙️ Bilang "ya" untuk simpan, atau "tidak" untuk batal...';
-  // Override onresult sementara untuk mode konfirmasi
+
   Voice.recognition.onresult = (e) => {
-    let final = '';
+    // Kumpulkan semua teks (final maupun interim) sebagai buffer
+    let finalText = '', interimText = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalText += t;
+      else interimText += t;
     }
-    if (final) {
-      const alts = [final.toLowerCase().trim()];
-      // kumpulkan semua alternatif jika tersedia
-      for (let i = 1; i < (e.results[0] || []).length; i++) {
-        alts.push(e.results[0][i].transcript.toLowerCase().trim());
+    const heard = (finalText || interimText).toLowerCase().trim();
+    if (heard) _confirmBuffer = heard;
+
+    // Proses segera jika sudah isFinal
+    if (finalText.trim()) {
+      const alts = [finalText.toLowerCase().trim()];
+      for (let i = 1; i < (e.results[e.results.length - 1] || []).length; i++) {
+        alts.push(e.results[e.results.length - 1][i].transcript.toLowerCase().trim());
       }
       handleConfirmVoice(alts);
     }
   };
-  // Override onend sementara untuk mode konfirmasi
+
   Voice.recognition.onend = () => {
     Voice.listening = false;
     Voice._confirmMode = false;
@@ -3617,6 +3625,18 @@ function confirmByVoice() {
     // Jika sudah di-null (save berhasil atau modal ditutup), stop
     if (Intent._activeConfirmRecognition !== Voice.recognition) return;
     Intent._activeConfirmRecognition = null;
+
+    // FALLBACK: Chrome Android kadang onend tanpa isFinal — proses buffer interim
+    if (_confirmBuffer) {
+      const alts = [_confirmBuffer];
+      _confirmBuffer = '';
+      // Cek apakah modal masih aktif sebelum proses
+      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+        handleConfirmVoice(alts);
+        return; // jangan restart mic, handleConfirmVoice yang lanjutkan
+      }
+    }
+
     // Restart mic selama modal masih aktif dan pending masih ada
     if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
       if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
@@ -3628,15 +3648,28 @@ function confirmByVoice() {
       }, 300);
     }
   };
+
   Voice.recognition.onerror = (e) => {
     Voice.listening = false;
     Voice._confirmMode = false;
+    _confirmBuffer = '';
     Voice.updateUI();
     if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
+    // Restart otomatis kecuali error permanen
+    if (e.error !== 'not-allowed' && e.error !== 'service-not-allowed') {
+      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+        setTimeout(() => {
+          if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+            confirmByVoice();
+          }
+        }, 500);
+      }
+    }
   };
+
   try {
     Voice.recognition.maxAlternatives = 3;
-    Voice.recognition.interimResults = false;
+    Voice.recognition.interimResults = true; // aktifkan interim agar buffer terisi
     Voice.recognition.start();
     Voice.listening = true;
     Voice.updateUI();
@@ -3647,6 +3680,8 @@ function confirmByVoice() {
 }
 
 function handleConfirmVoice(alts) {
+  // Guard: jika tidak ada pending lagi (sudah diproses), abaikan
+  if (!Intent.pendingResult && !Intent.pendingBatch) return;
   const yes = /^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|bener|correct|yes|jadi|gas|go|proceed|next|continue|yak|ye|yep|mantap|baik|gass|okee|lakuin|catat|rekam)\b/;
   const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus|jangan|wait|tunggu|hold)\b/;
   const matched = alts.find(a => yes.test(a));
