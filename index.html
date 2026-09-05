@@ -9,14 +9,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-192.svg" />
-<!-- Supabase Integration for Glossary System -->
-<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0"></script>
-<script>
-  const SUPABASE_CONFIG = {
-    url: 'https://wycodpzildimadpxnkzt.supabase.co',  // GANTI INI dengan project URL
-    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5Y29kcHppbGRpbWFkcHhua3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODY1NTcsImV4cCI6MjEwNDE2MjU1N30.hdohU1CWDZtnIYv61Z4LAJaWcR6A9XrJtGECQIBz6do'                        // GANTI INI dengan anon key
-  };
-</script>
 <title>Catat Aja — Buku Catatan Keuangan yang Bisa Diajak Bicara</title>
 <style>
   /* ============ RESET & BASE ============ */
@@ -731,9 +723,19 @@
       <label class="form-label">Nama kamu</label>
       <input type="text" id="loginName" class="form-input" placeholder="Contoh: Ibu Sari" />
     </div>
-    <button class="btn btn-primary btn-block" onclick="doLogin()">Mulai</button>
-    <p class="text-muted text-sm mt-3" style="text-align:center;">
-      Data tersimpan di perangkat ini. Tidak perlu internet untuk mencatat.
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" id="loginEmail" class="form-input" placeholder="nama@email.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kata sandi</label>
+      <input type="password" id="loginPassword" class="form-input" placeholder="Minimal 6 karakter" />
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">Masuk</button>
+    <button class="btn btn-secondary btn-block mt-2" onclick="doSignUp()">Daftar Akun Baru</button>
+    <p class="text-muted text-sm mt-3" id="loginMsg" style="text-align:center;"></p>
+    <p class="text-muted text-sm mt-2" style="text-align:center;">
+      Transaksi tetap tersimpan di perangkat ini. Akun dipakai supaya "ingatan istilah" ikut kamu di mana saja.
     </p>
   </div>
 </div>
@@ -932,8 +934,8 @@
     <button class="nav-item" data-page="shopping" onclick="goTo('shopping')">
       <span class="nav-icon">🛒</span>Belanja
     </button>
-    <button class="nav-item" data-page="glossary" onclick="goTo('glossary'); loadGlossaryUI();">
-      <span class="nav-icon">📚</span>Pelajaran
+    <button class="nav-item" data-page="settings" onclick="goTo('settings')">
+      <span class="nav-icon">⚙️</span>Lainnya
     </button>
   </nav>
 </div>
@@ -968,7 +970,93 @@
 <!-- ==================== TOAST ==================== -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+/* ============ SUPABASE ============
+ * GANTI dua nilai di bawah ini dengan Project URL & anon public key
+ * dari Supabase kamu (Project Settings → API). anon key aman ditaruh
+ * di frontend selama Row Level Security (RLS) aktif di tabelnya. */
+const SUPABASE_URL = 'https://rpdtfjgbbpylnglipmjk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwZHRmamdiYnB5bG5nbGlwbWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODkwOTcsImV4cCI6MjEwNDE2NTA5N30.zKjZOFzuM57KPHS6tkOyv2k-hlBmSbgkptOTfAHKsII';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ AUTH ============ */
+const Auth = {
+  user: null,
+  async signUp(email, password, displayName) {
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { data: { display_name: displayName } }
+    });
+    if (error) throw error;
+    return data;
+  },
+  async signIn(email, password) {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
+  },
+  async signOut() {
+    await sb.auth.signOut();
+  },
+  async getSession() {
+    const { data } = await sb.auth.getSession();
+    return data.session;
+  }
+};
+
+/* ============ GLOSSARY — kamus istilah/bahasa daerah per kata ============
+ * Beda dari sekadar menghafal kalimat: setiap ISTILAH yang diajarkan
+ * (misal "gocap" → "lima puluh ribu") otomatis dipakai untuk menggantikan
+ * kata itu di kalimat APA PUN sebelum diparse — jadi generalisasinya
+ * lintas kalimat, bukan cuma kalimat yang identik.
+ * Disimpan di Supabase (tabel glossary), per akun (user_id). */
+const Glossary = {
+  cache: {}, // { "gocap": "lima puluh ribu", ... }
+  normalizeTerm(term) {
+    return String(term || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  },
+  async loadAll() {
+    this.cache = {};
+    if (!Auth.user) return;
+    try {
+      const { data, error } = await sb.from('glossary').select('term, replacement').eq('user_id', Auth.user.id);
+      if (error) throw error;
+      (data || []).forEach(row => { this.cache[row.term] = row.replacement; });
+    } catch (e) {
+      console.warn('Gagal memuat glossary:', e.message || e);
+    }
+  },
+  async save(term, replacement) {
+    const key = this.normalizeTerm(term);
+    const value = String(replacement || '').trim();
+    if (!key || !value || !Auth.user) return;
+    this.cache[key] = value;
+    try {
+      const { error } = await sb.from('glossary').upsert(
+        { user_id: Auth.user.id, term: key, replacement: value },
+        { onConflict: 'user_id,term' }
+      );
+      if (error) throw error;
+    } catch (e) {
+      console.warn('Gagal menyimpan glossary:', e.message || e);
+      showToast('Diingat sementara, gagal sinkron ke server');
+    }
+  },
+  // ganti semua istilah yang dikenal di dalam `text` dengan padanan bakunya
+  // (istilah lebih panjang dulu, biar "gocap" tidak kepotong sama "cap")
+  apply(text) {
+    let result = String(text || '');
+    const terms = Object.keys(this.cache).sort((a, b) => b.length - a.length);
+    for (const term of terms) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(^|\\s)' + escaped + '(?=\\s|$)', 'gi');
+      result = result.replace(re, (m, pre) => pre + this.cache[term]);
+    }
+    return result;
+  }
+};
+
 /* ============================================================
  *  CATAT AJA — Aplikasi keuangan berbasis suara
  *  Struktur:
@@ -2225,6 +2313,11 @@ const Intent = {
       return;
     }
 
+    // ganti istilah yang sudah diajarkan (glossary) dengan padanan bakunya
+    // SEBELUM diparse — supaya berlaku di kalimat apa pun, bukan cuma yang identik
+    const rawText = text;
+    text = Glossary.apply(text);
+
     const localParsed = NLP.parse(text);
     let parsed = localParsed;
     const providers = [];
@@ -2308,7 +2401,7 @@ const Intent = {
         this.showUnpurchased();
         break;
       default:
-        this.askClarification(text);
+        this.askClarification(rawText);
     }
   },
 
@@ -2654,10 +2747,11 @@ const Intent = {
 
   askClarification(text) {
     closeVoiceModal();
+    this._lastUnknownText = text;
     const body = document.getElementById('confirmBody');
     const actions = document.getElementById('confirmActions');
     document.getElementById('confirmTitle').textContent = 'Saya kurang paham';
-    document.getElementById('confirmSub').textContent = 'Coba katakan dengan cara lain';
+    document.getElementById('confirmSub').textContent = 'Coba katakan dengan cara lain, atau ajari saya';
     body.innerHTML = `
       <div class="confirm-card">
         <div style="font-size:13px; color:#6b7280; margin-bottom:8px;">Kamu bilang:</div>
@@ -2673,9 +2767,51 @@ const Intent = {
     `;
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="closeConfirm()">Tutup</button>
+      <button class="btn btn-secondary" onclick="Intent.openTeachForm()">📖 Ajari Saya</button>
       <button class="btn btn-primary" onclick="closeConfirm(); openVoiceModal();">Coba Lagi</button>
     `;
     openModal('confirmModal');
+  },
+
+  // ── AJARI SAYA: form untuk menjelaskan maksud ucapan yang tidak dikenali ──
+  openTeachForm() {
+    const text = this._lastUnknownText || '';
+    const body = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Ajari Saya';
+    document.getElementById('confirmSub').textContent = 'Istilah ini otomatis dikenali di kalimat apa pun berikutnya';
+    body.innerHTML = `
+      <div class="confirm-card" style="text-align:left;">
+        <div style="font-size:13px; color:#6b7280; margin-bottom:10px;">Ucapan: <i>"${escapeHtml(text)}"</i></div>
+        <div class="form-group">
+          <label class="form-label">Kata / istilah yang tidak dikenali</label>
+          <input type="text" id="teachTerm" class="form-input" placeholder="Contoh: gocap" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ganti dengan kata baku</label>
+          <input type="text" id="teachReplacement" class="form-input" placeholder="Contoh: lima puluh ribu" />
+        </div>
+        <div style="font-size:12px; color:#9ca3af; line-height:1.6;">
+          Contoh lain: "cepek" → "seratus ribu", "bombe" → "bombay", "sak karung" → "1 karung"
+        </div>
+      </div>
+    `;
+    actions.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-primary" onclick="Intent.saveTeach()">Simpan & Coba Lagi</button>
+    `;
+    openModal('confirmModal');
+  },
+
+  saveTeach() {
+    const text = this._lastUnknownText || '';
+    const term = document.getElementById('teachTerm').value.trim();
+    const replacement = document.getElementById('teachReplacement').value.trim();
+    if (!term || !replacement) { showToast('Isi istilah dan penggantinya dulu ya'); return; }
+    Glossary.save(term, replacement);
+    closeConfirm();
+    showToast('Diingat ✓ — mencoba lagi...');
+    this.handle(text);
   },
 
   askMissingWithVoice() {
@@ -3279,21 +3415,63 @@ function quickVoice(text) {
 }
 
 /* ============ 11. LOGIN ============ */
-function doLogin() {
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = '';
+  if (!email || !password) { showToast('Isi email dan kata sandi'); return; }
+  try {
+    const data = await Auth.signIn(email, password);
+    Auth.user = data.user;
+    const name = document.getElementById('loginName').value.trim()
+      || data.user.user_metadata?.display_name
+      || state.user.name;
+    await afterLoginSuccess(name);
+  } catch (e) {
+    msg.textContent = e.message || 'Gagal masuk';
+  }
+}
+async function doSignUp() {
   const name = document.getElementById('loginName').value.trim();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = '';
   if (!name) { showToast('Isi nama dulu ya'); return; }
-  state.user.name = name;
+  if (!email || !password) { showToast('Isi email dan kata sandi'); return; }
+  try {
+    const data = await Auth.signUp(email, password, name);
+    if (data.user && !data.session) {
+      msg.textContent = 'Cek email kamu untuk konfirmasi akun, lalu masuk di sini.';
+      return;
+    }
+    Auth.user = data.user;
+    await afterLoginSuccess(name);
+  } catch (e) {
+    msg.textContent = e.message || 'Gagal daftar';
+  }
+}
+async function afterLoginSuccess(name) {
+  state.user.name = name || state.user.name;
   DB.save(state);
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('headerName').textContent = name;
+  document.getElementById('headerName').textContent = state.user.name;
   document.getElementById('headerDate').textContent = formatDate(new Date());
+  await Glossary.loadAll();
   renderAll();
 }
-function doLogout() {
+async function doLogout() {
+  try { await Auth.signOut(); } catch (e) {}
+  Auth.user = null;
+  Glossary.cache = {};
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginName').value = state.user.name || '';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  const msg = document.getElementById('loginMsg');
+  if (msg) msg.textContent = '';
 }
 
 /* ============ 12. FOLLOW-UP VOICE HANDLER ============ */
@@ -3321,15 +3499,15 @@ const _origOnEnd = Voice.init.bind(Voice);
 })();
 
 /* ============ 13. INIT ============ */
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   Voice.init();
-  // auto login kalau sudah ada nama
-  if (state.user.name) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('headerName').textContent = state.user.name;
-    document.getElementById('headerDate').textContent = formatDate(new Date());
-    renderAll();
+  // auto login kalau sesi Supabase masih aktif
+  const session = await Auth.getSession();
+  if (session) {
+    Auth.user = session.user;
+    const name = state.user.name || session.user.user_metadata?.display_name || '';
+    document.getElementById('loginName').value = name;
+    await afterLoginSuccess(name);
   } else {
     document.getElementById('loginScreen').style.display = 'flex';
   }
@@ -3351,145 +3529,5 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 </script>
-
-<!-- ========== GLOSSARY SYSTEM: LEARN TERM MODAL ========== -->
-<div id="learnTermModal" class="modal-overlay">
-  <div class="modal-content" style="max-width: 400px;">
-    <div class="modal-header">
-      <h2>Apa itu "<span id="learnTermText"></span>"?</h2>
-      <button onclick="closeModal('learnTermModal')" class="close-btn">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px;">Saya tidak kenal istilah ini. Bantu saya belajar? 😊</p>
-      <div style="margin-bottom: 14px;">
-        <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Kategori</label>
-        <select id="learnTermCategory" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;">
-          <option value="pemasukan">💰 Pemasukan</option>
-          <option value="pengeluaran">💸 Pengeluaran</option>
-          <option value="merchant">🏪 Nama Toko</option>
-          <option value="person">👤 Nama Orang</option>
-          <option value="custom">❓ Lainnya</option>
-        </select>
-      </div>
-      <div style="margin-bottom: 14px;">
-        <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Detail Tipe</label>
-        <select id="learnTermSubType" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"><option value="lainnya">Lainnya</option></select>
-      </div>
-    </div>
-    <div class="modal-footer" style="display: flex; gap: 8px;">
-      <button onclick="closeModal('learnTermModal')" style="flex: 1; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-weight: 500; cursor: pointer; font-size: 14px;">Batal</button>
-      <button id="learnTermSaveBtn" style="flex: 1; padding: 10px 16px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;">Simpan ✓</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========== GLOSSARY AUTH MODAL ========== -->
-<div id="authModal" class="modal-overlay">
-  <div class="modal-content" style="max-width: 380px;">
-    <div class="modal-header">
-      <h2>🔐 Login untuk Sinkronisasi</h2>
-      <button onclick="closeModal('authModal')" class="close-btn">✕</button>
-    </div>
-    <div class="modal-body">
-      <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px;">Sinkronisasi memori ke semua perangkat.</p>
-      <div style="margin-bottom: 14px;">
-        <input id="authEmail" type="email" placeholder="Email" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"/>
-      </div>
-      <div style="margin-bottom: 16px;">
-        <input id="authPassword" type="password" placeholder="Password" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"/>
-      </div>
-    </div>
-    <div class="modal-footer" style="display: flex; gap: 8px; flex-direction: column;">
-      <button id="authSignInBtn" style="width: 100%; padding: 10px 16px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;">Login</button>
-      <button id="authSignUpBtn" style="width: 100%; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-weight: 600; cursor: pointer; font-size: 14px;">Buat Akun</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========== GLOSSARY PAGE ========== -->
-<div id="page-glossary" class="page">
-  <div class="page-title">📚 Pelajaran Saya</div>
-  <div class="page-sub">Istilah yang sudah dipelajari</div>
-  <div style="margin-bottom: 16px;">
-    <button onclick="openModal('glossaryModal'); loadGlossaryUI()" style="width: 100%; padding: 12px 16px; background: #10b981; color: #fff; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">✏️ Kelola</button>
-  </div>
-  <div class="summary-grid">
-    <div class="summary-item"><div class="label">Total</div><div class="value" id="glossaryCount">0</div></div>
-    <div class="summary-item"><div class="label">Belum Diketahui</div><div class="value" id="unknownCount">0</div></div>
-  </div>
-  <div style="margin-top: 20px;">
-    <div class="page-sub">Sinkronisasi Cloud</div>
-    <div id="authStatus" style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: #166534;">⏳ Mengecek...</div>
-    <button id="authToggleBtn" style="width: 100%; padding: 10px 16px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; color: #374151;">🔐 Login</button>
-  </div>
-</div>
-
-<!-- ========== GLOSSARY MODULE ========== -->
-<script src="./catat-aja-glossary-module.js"></script>
-
-<script>
-// Glossary Integration
-const origIntentHandle = Intent.handle.bind(Intent);
-Intent.handle = async function(transcript) {
-  if (typeof window.Memory !== 'undefined' && typeof window.IntentHandleWithMemory === 'function') {
-    await IntentHandleWithMemory(transcript);
-  } else {
-    origIntentHandle(transcript);
-  }
-};
-
-async function loadGlossaryUI() {
-  if (typeof Memory === 'undefined') return;
-  const glossaryList = document.getElementById('glossaryList');
-  glossaryList.innerHTML = '';
-  const terms = Object.values(Memory.glossary || {});
-  if (terms.length === 0) {
-    glossaryList.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px 0;">Belum ada istilah</p>';
-  } else {
-    terms.forEach(term => {
-      const card = document.createElement('div');
-      card.style.cssText = 'background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;';
-      card.innerHTML = `<div><div style="font-weight: 600; font-size: 14px; color: #111827;">${term.term}</div><div style="font-size: 12px; color: #6b7280;">${term.category}</div></div><button onclick="Memory.forget('${term.term}'); loadGlossaryUI()" style="background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer;">Hapus</button>`;
-      glossaryList.appendChild(card);
-    });
-  }
-  document.getElementById('glossaryCount').textContent = terms.length;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const authToggleBtn = document.getElementById('authToggleBtn');
-  const authStatus = document.getElementById('authStatus');
-  function updateAuthUI() {
-    if (typeof currentUser !== 'undefined' && currentUser) {
-      authStatus.innerHTML = `✅ Login as <strong>${currentUser.email}</strong>`;
-      authToggleBtn.textContent = '🚪 Logout';
-      authToggleBtn.onclick = signOutUser;
-    } else {
-      authStatus.innerHTML = '⚠️ Belum login';
-      authToggleBtn.textContent = '🔐 Login';
-      authToggleBtn.onclick = () => openModal('authModal');
-    }
-  }
-  updateAuthUI();
-  document.getElementById('authSignInBtn').onclick = async () => {
-    if (typeof signInUser !== 'undefined') {
-      if (await signInUser(document.getElementById('authEmail').value, document.getElementById('authPassword').value)) {
-        closeModal('authModal');
-        updateAuthUI();
-        loadGlossaryUI();
-      }
-    }
-  };
-  document.getElementById('authSignUpBtn').onclick = async () => {
-    if (typeof signUpUser !== 'undefined') {
-      if (await signUpUser(document.getElementById('authEmail').value, document.getElementById('authPassword').value)) {
-        closeModal('authModal');
-        updateAuthUI();
-      }
-    }
-  };
-});
-</script>
-
 </body>
 </html>
