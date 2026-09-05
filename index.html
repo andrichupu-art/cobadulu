@@ -1696,14 +1696,20 @@ const NLP = {
       }
     }
 
-    // fallback: angka digit biasa
-    const digitMatch = t.match(/\d+(?:[.,]\d+)?/);
-    if (digitMatch) {
-      const n = parseFloat(digitMatch[0].replace(',', '.'));
-      if (!isNaN(n)) {
-        // kalau angka kecil (< 100), mungkin bukan harga
-        return Math.round(n);
-      }
+    // format angka dengan titik sebagai pemisah ribuan: "20.000", "1.500.000"
+    // harus dicek sebelum fallback digitMatch agar "2 kg 20.000" tidak salah ambil angka "2"
+    const dotThousandMatch = t.match(/\b(\d{1,3}(?:\.\d{3})+)\b/);
+    if (dotThousandMatch) {
+      const cleaned = dotThousandMatch[1].replace(/\./g, '');
+      const n = parseInt(cleaned, 10);
+      if (!isNaN(n) && n >= 100) return n;
+    }
+
+    // fallback: angka digit biasa — ambil angka TERBESAR supaya qty tidak mengalahkan harga
+    const allDigits = [...t.matchAll(/\d+(?:[.,]\d+)?/g)].map(m => parseFloat(m[0].replace(',', '.')));
+    if (allDigits.length > 0) {
+      const n = Math.max(...allDigits);
+      if (!isNaN(n)) return Math.round(n);
     }
     return null;
   },
