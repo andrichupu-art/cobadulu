@@ -2358,10 +2358,10 @@ const Intent = {
     // Nominal dari parser lokal harus mengalahkan AI karena parser lokal memahami
     // format Indonesia seperti "20.000". Tanpa ini, AI kadang mengira angka qty
     // (contoh: "2 kg") sebagai amount dan tampilan menjadi "Rp 2".
-    if (quickIntent === 'create_expense' && localParsed.amount) {
+    if (['create_income', 'create_expense'].includes(quickIntent) && localParsed.amount) {
       parsed = {
         ...parsed,
-        intent: 'create_expense',
+        intent: quickIntent,
         name: parsed.name || localParsed.name,
         amount: localParsed.amount,
         qty: parsed.qty ?? localParsed.qty,
@@ -2855,7 +2855,10 @@ function handleFollowUp(text, pending) {
 /* ============ 6. SAVE ACTIONS ============ */
 function saveBatch() {
   const items = Intent.pendingBatch;
-  if (!items || items.length === 0) return;
+  if (!items || items.length === 0) {
+    closeConfirm();
+    return;
+  }
   for (const p of items) {
     if (!p.name || !p.amount) continue;
     const tx = {
@@ -2899,6 +2902,7 @@ function removeBatchItem(idx) {
 function saveTransaction() {
   const p = Intent.pendingResult;
   if (!p || !p.name || !p.amount) {
+    closeConfirm();
     showToast('Data belum lengkap');
     return;
   }
@@ -2955,7 +2959,10 @@ function tryAutoCheckShopping(name) {
 
 function saveShoppingList() {
   const p = Intent.pendingResult;
-  if (!p || !p.items || p.items.length === 0) return;
+  if (!p || !p.items || p.items.length === 0) {
+    closeConfirm();
+    return;
+  }
   const sl = {
     id: uid(),
     name: 'Belanja ' + formatDateShort(new Date()),
@@ -3541,7 +3548,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   // tutup modal dengan klik overlay
   document.querySelectorAll('.modal-overlay').forEach(ov => {
     ov.addEventListener('click', (e) => {
-      if (e.target === ov) ov.classList.remove('active');
+      if (e.target !== ov) return;
+      if (ov.id === 'confirmModal') closeConfirm();
+      else if (ov.id === 'voiceModal') closeVoiceModal();
+      else closeModal(ov.id);
     });
   });
 });
@@ -3549,7 +3559,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 <script>
   if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch((error) => {
+      navigator.serviceWorker.register('./sw.js?v=2').catch((error) => {
         console.warn('PWA offline belum aktif:', error);
       });
     });
