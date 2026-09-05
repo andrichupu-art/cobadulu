@@ -91,6 +91,55 @@
     margin-top: 48px;
   }
 
+  /* ── Background berubah saat mic aktif ── */
+  #page-home {
+    transition: background-color 0.4s ease;
+  }
+  #page-home.listening-bg {
+    background: rgba(239, 68, 68, 0.07);
+  }
+  /* Ripple merah memancar dari belakang mic */
+  .home-mic-ring {
+    position: relative;
+  }
+  .home-mic-ring::before,
+  .home-mic-ring::after {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #page-home.listening-bg .home-mic-ring::before {
+    border-color: rgba(239, 68, 68, 0.4);
+    opacity: 1;
+    animation: micRipple 1.6s ease-out infinite;
+  }
+  #page-home.listening-bg .home-mic-ring::after {
+    border-color: rgba(239, 68, 68, 0.2);
+    opacity: 1;
+    animation: micRipple 1.6s ease-out infinite 0.7s;
+  }
+  @keyframes micRipple {
+    0%   { transform: scale(0.88); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  /* Header ikut sedikit berubah saat listening */
+  .app-header {
+    transition: background-color 0.4s ease, border-color 0.4s ease;
+  }
+  body.mic-listening .app-header {
+    background: rgba(254, 226, 226, 0.92);
+    border-bottom-color: rgba(239, 68, 68, 0.18);
+    backdrop-filter: blur(14px);
+  }
+  body.mic-listening .logo-dot {
+    background: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  }
+
   .home-mic-wrap {
     display: flex;
     flex-direction: column;
@@ -2618,6 +2667,10 @@ const Voice = {
       heroMic && heroMic.classList.add('listening');
       status && (status.textContent = 'Mendengarkan...');
       btn && (btn.textContent = 'Stop');
+      // inline home — background merah
+      const pageHome = document.getElementById('page-home');
+      if (pageHome) pageHome.classList.add('listening-bg');
+      document.body.classList.add('mic-listening');
       // inline home
       if (homeHint) homeHint.textContent = 'Mendengarkan...';
       if (homeExample) homeExample.style.display = 'none';
@@ -2625,6 +2678,10 @@ const Voice = {
     } else {
       mic && mic.classList.remove('listening');
       heroMic && heroMic.classList.remove('listening');
+      // cabut background merah
+      const pageHome = document.getElementById('page-home');
+      if (pageHome) pageHome.classList.remove('listening-bg');
+      document.body.classList.remove('mic-listening');
       const full = (this.finalTranscript + ' ' + this.interimTranscript).trim();
       if (full) {
         status && (status.textContent = 'Selesai. Memproses...');
@@ -3817,11 +3874,10 @@ const ConfirmBanner = {
               `<button class="cb-btn ${a.cls}" onclick="${a.fn}">${a.label}</button>`
             ).join('');
           }
-          if (voiceMode) {
+          if (voiceMode === 'listening') {
             cbVoiceRow.style.display = 'flex';
-            cbVoiceRow.className = 'confirm-banner-voice ' + (voiceMode === 'listening' ? 'listening' : '');
-            document.getElementById('cbVoiceText').textContent =
-              voiceMode === 'listening' ? 'Bilang "ya" atau "tidak"...' : 'Aplikasi sedang berbicara...';
+            cbVoiceRow.className = 'confirm-banner-voice listening';
+            document.getElementById('cbVoiceText').textContent = 'Bilang "ya" atau "tidak"...';
           }
         }
       }, 22);
@@ -3839,12 +3895,14 @@ const ConfirmBanner = {
     const row = document.getElementById('cbVoiceRow');
     const txt = document.getElementById('cbVoiceText');
     if (!row) return;
-    if (!state) { row.style.display = 'none'; return; }
+    // Hanya tampilkan saat listening — speaking & processing disembunyikan
+    if (!state || state === 'speaking' || state === 'processing') {
+      row.style.display = 'none';
+      return;
+    }
     row.style.display = 'flex';
-    row.className = 'confirm-banner-voice ' + (state === 'listening' ? 'listening' : '');
-    if (state === 'listening') txt.textContent = 'Bilang "ya" atau "tidak"...';
-    else if (state === 'speaking') txt.textContent = 'Aplikasi sedang berbicara...';
-    else if (state === 'processing') txt.textContent = 'Memproses jawaban...';
+    row.className = 'confirm-banner-voice listening';
+    txt.textContent = 'Bilang "ya" atau "tidak"...';
   }
 };
 
