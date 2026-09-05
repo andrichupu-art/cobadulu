@@ -3637,7 +3637,7 @@ function startConfirmAfterTTS(speakFn, afterTTS) {
     setTimeout(() => {
       if (afterTTS) afterTTS();
       confirmByVoice();
-    }, 100);
+    }, 700);
     return;
   }
   // Pasang listener onend SEBELUM speak agar tidak terlewat
@@ -3657,7 +3657,7 @@ function startConfirmAfterTTS(speakFn, afterTTS) {
         setTimeout(() => {
           if (afterTTS) afterTTS();
           confirmByVoice();
-        }, 100);
+        }, 700);
       };
     }
     origSpeak(u);
