@@ -1798,16 +1798,22 @@ const NLP = {
 
     // fallback: cari semua angka, ambil yang TERBESAR atau TERAKHIR
     // skip angka yang diikuti satuan (kg, g, liter, dll) karena itu quantity
-    const units = /\b(kilo|kg|kilogram|gram|g|bungkus|pak|pcs|bij|butir|buah|liter|l|batang|kotak|box|plastik|ikat)\b/i;
-    const allMatches = [...t.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:(kilo|kg|kilogram|gram|g|bungkus|pak|pcs|bij|butir|buah|liter|l|batang|kotak|box|plastik|ikat)?)/gi)];
+    const allMatches = [...t.matchAll(/(\d+(?:[.,]\d{3})*(?:[.,]\d+)?)\s*(?:(kilo|kg|kilogram|gram|g|bungkus|pak|pcs|bij|butir|buah|liter|l|batang|kotak|box|plastik|ikat)?)/gi)];
     
     // filter: ambil angka yang TIDAK diikuti unit
     const validNumbers = [];
     for (const match of allMatches) {
-      const num = parseFloat(match[1].replace(',', '.'));
       const hasUnit = match[2] && match[2].length > 0;
-      if (!isNaN(num) && !hasUnit) {
-        validNumbers.push(num);
+      if (!hasUnit) {
+        // normalize format Indonesia: "20.000" → 20000, "1.234.567" → 1234567
+        // ganti semua titik di angka jadi kosong, terus gunakan koma jadi decimal
+        const normalized = match[1]
+          .replace(/\./g, '')      // buang titik (pemisah ribuan)
+          .replace(',', '.');       // koma jadi decimal point
+        const num = parseFloat(normalized);
+        if (!isNaN(num) && num > 0) {
+          validNumbers.push(num);
+        }
       }
     }
 
