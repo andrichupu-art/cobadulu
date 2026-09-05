@@ -82,9 +82,14 @@
     justify-content: center;
     min-height: calc(100vh - 80px);
     padding: 20px;
+    padding-bottom: 100px;
     text-align: center;
   }
   #page-home.active { display: flex; }
+  /* Geser mic sedikit ke bawah dari tengah */
+  #page-home .home-mic-wrap {
+    margin-top: 48px;
+  }
 
   .home-mic-wrap {
     display: flex;
@@ -366,26 +371,101 @@
   .btn-danger:active { background: #fecaca; }
   .btn-block { width: 100%; }
 
-  /* ============ BOTTOM NAV ============ */
-  .bottom-nav {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px;
+  /* ============ HAMBURGER NAV ============ */
+  /* Tombol hamburger di pojok kiri bawah */
+  .hamburger-btn {
+    position: fixed;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    left: 20px;
+    z-index: 30;
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    background: #047857;
+    color: #ffffff;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 5px;
+    box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
+    transition: transform 0.2s ease, background 0.2s ease;
+    border: none; cursor: pointer;
+  }
+  .hamburger-btn:active { transform: scale(0.93); }
+  .hamburger-btn .hb-line {
+    width: 20px; height: 2px; background: #fff; border-radius: 2px;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+    transform-origin: center;
+  }
+  .hamburger-btn.open .hb-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger-btn.open .hb-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .hamburger-btn.open .hb-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Overlay gelap saat drawer terbuka */
+  .nav-drawer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 25;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+    backdrop-filter: blur(2px);
+  }
+  .nav-drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* Drawer slide dari kiri */
+  .nav-drawer {
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 20px;
+    z-index: 28;
     background: #ffffff;
-    border-top: 1px solid #eef0f3;
-    display: flex; justify-content: space-around;
-    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-    z-index: 20;
+    border-radius: 20px;
+    padding: 12px 8px;
+    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+    display: flex; flex-direction: column; gap: 4px;
+    min-width: 180px;
+    transform: translateX(-120%) scale(0.92);
+    transform-origin: bottom left;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
   }
-  .nav-item {
-    flex: 1;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 8px 4px;
-    color: #9ca3af;
-    font-size: 11px;
-    transition: color 0.15s;
+  .nav-drawer.open {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+    pointer-events: all;
   }
-  .nav-item .nav-icon { font-size: 22px; margin-bottom: 2px; }
-  .nav-item.active { color: #10b981; }
+  .nav-drawer-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-radius: 13px;
+    font-size: 14px; font-weight: 500;
+    color: #374151;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-align: left;
+    border: none; cursor: pointer; background: none; width: 100%;
+  }
+  .nav-drawer-item .nd-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+  .nav-drawer-item:hover { background: #f3f4f6; }
+  .nav-drawer-item.active { background: #ecfdf5; color: #047857; font-weight: 600; }
+  .nav-drawer-item.active .nd-icon { }
+
+  /* Label active page di samping hamburger */
+  .hamburger-label {
+    position: fixed;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    left: 82px;
+    z-index: 30;
+    font-size: 13px; font-weight: 600;
+    color: #047857;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  /* Sembunyikan bottom-nav lama — kita ganti */
+  .bottom-nav { display: none !important; }
+  .nav-item { display: none; }
 
   /* ============ MODAL ============ */
   .modal-overlay {
@@ -435,6 +515,38 @@
   .confirm-voice-indicator.processing { background: #eff6ff; color: #1d4ed8; }
   .confirm-voice-indicator.processing .indicator-dot { background: #3b82f6; }
   @keyframes indicatorPulse { 50% { transform: scale(1.35); opacity: 0.65; } }
+
+  /* Badge "giliran Anda menjawab" — ditempel di pojok kanan atas LAYAR,
+     di luar kartu modal, agar langsung kelihatan meski modal panjang. */
+  .confirm-turn-badge {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    right: 14px;
+    z-index: 110;
+    display: flex; align-items: center; gap: 6px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 12px; font-weight: 700;
+    padding: 7px 13px;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5);
+    animation: turnBadgePulse 1.1s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .confirm-turn-badge .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ffffff;
+  }
+  @keyframes turnBadgePulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5); }
+    50% { transform: scale(1.07); box-shadow: 0 6px 22px rgba(239, 68, 68, 0.75); }
+  }
+  /* Background overlay ikut memerah saat giliran user menjawab,
+     supaya statusnya jelas walau user tidak sempat lihat badge kecil. */
+  .modal-overlay { transition: background-color 0.25s ease; }
+  .modal-overlay.listening-mode {
+    background: rgba(239, 68, 68, 0.35);
+  }
 
   /* ============ VOICE MODAL ============ */
   .voice-modal-center {
@@ -515,6 +627,96 @@
   }
   .form-input:focus { outline: none; border-color: #10b981; }
 
+  /* ============ INLINE CONFIRM BANNER (ganti popup) ============ */
+  /* Banner konfirmasi muncul di atas layar seperti orang mengetik */
+  .confirm-banner {
+    position: fixed;
+    top: 0; left: 50%;
+    transform: translateX(-50%) translateY(-100%);
+    width: 100%; max-width: 480px;
+    z-index: 150;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12);
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 14px;
+    transition: transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1);
+    pointer-events: none;
+  }
+  .confirm-banner.show {
+    transform: translateX(-50%) translateY(0);
+    pointer-events: all;
+  }
+  .confirm-banner-typing {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .confirm-banner-typing .cb-dots span {
+    display: inline-block;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #047857;
+    animation: cbDot 1.2s ease-in-out infinite;
+    margin-right: 3px;
+  }
+  .confirm-banner-typing .cb-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .confirm-banner-typing .cb-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes cbDot {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+  .confirm-banner-typing .cb-typing-text {
+    font-size: 11px; color: #047857; font-weight: 600; letter-spacing: 0.3px;
+  }
+  .confirm-banner-content {
+    font-size: 15px; color: #111827; font-weight: 500;
+    line-height: 1.45;
+    min-height: 22px;
+    /* typewriter: overflow hidden, konten muncul char by char via JS */
+  }
+  .confirm-banner-sub {
+    font-size: 12px; color: #6b7280; margin-top: 4px;
+  }
+  .confirm-banner-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .confirm-banner-actions .cb-btn {
+    flex: 1; padding: 9px 12px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    border: none; cursor: pointer; transition: all 0.15s;
+  }
+  .cb-btn-yes { background: #047857; color: #fff; }
+  .cb-btn-yes:active { background: #065f46; }
+  .cb-btn-no { background: #f1f5f9; color: #374151; }
+  .cb-btn-no:active { background: #e2e8f0; }
+  .confirm-banner-voice {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px;
+    font-size: 12px; color: #6b7280;
+  }
+  .confirm-banner-voice .cb-mic-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #9ca3af;
+    flex-shrink: 0;
+  }
+  .confirm-banner-voice.listening .cb-mic-dot {
+    background: #10b981;
+    animation: indicatorPulse 1.1s ease-in-out infinite;
+  }
+  .confirm-banner-type-badge {
+    display: inline-block;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .confirm-banner-type-badge.in { background: #d1fae5; color: #047857; }
+  .confirm-banner-type-badge.out { background: #fee2e2; color: #b91c1c; }
+  .confirm-banner-type-badge.shopping { background: #dbeafe; color: #1e40af; }
+  .confirm-banner-type-badge.info { background: #f3f4f6; color: #374151; }
+  .confirm-banner-amount {
+    font-size: 22px; font-weight: 700; color: #111827;
+    margin-top: 2px; font-variant-numeric: tabular-nums;
+  }
+
   /* ============ TOAST ============ */
   .toast {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
@@ -587,7 +789,7 @@
     outline-offset: 3px;
   }
 
-  #app { background: var(--color-background); padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  #app { background: var(--color-background); padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
   .app-header {
     padding-top: calc(16px + env(safe-area-inset-top));
     background: rgba(255, 255, 255, 0.94);
@@ -678,23 +880,9 @@
   .home-saldo-pill .pill-label { color: var(--color-muted); }
   .home-saldo-pill .pill-value.in { color: var(--color-primary); }
 
-  .quick-action, .nav-item { min-height: 48px; }
-  .quick-action { border-color: var(--color-border); transition: background-color var(--motion-fast) ease, transform var(--motion-fast) ease; }
+  .quick-action { min-height: 48px; border-color: var(--color-border); transition: background-color var(--motion-fast) ease, transform var(--motion-fast) ease; }
   .quick-action:hover { background: #f8fafc; transform: translateY(-2px); }
   .quick-action:active { transform: translateY(1px) scale(0.985); }
-  .bottom-nav {
-    padding-top: 10px;
-    background: rgba(255, 255, 255, 0.96);
-    border-top-color: var(--color-border);
-    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
-    backdrop-filter: blur(14px);
-  }
-  .nav-item { padding: 8px 4px; color: #64748b; }
-  .nav-item:hover, .nav-item.active { color: var(--color-primary); }
-  .nav-item.active { font-weight: 600; }
-  .nav-item .nav-icon { line-height: 1; }
-  .nav-item .voice-visualizer { width: 28px; height: 22px; gap: 2px; }
-  .nav-item .voice-visualizer span { width: 3px; height: 9px; }
   .login-logo .voice-visualizer { color: #ffffff; }
 
   .modal-overlay { background: rgba(15, 23, 42, 0.62); }
@@ -935,7 +1123,7 @@
     </p>
   </section>
 
-  <!-- BOTTOM NAV -->
+  <!-- BOTTOM NAV (lama, disembunyikan via CSS) -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-page="home" onclick="goTo('home')">
       <span class="nav-icon"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></span>Suara
@@ -955,6 +1143,35 @@
   </nav>
 </div>
 
+<!-- ==================== HAMBURGER BUTTON ==================== -->
+<button class="hamburger-btn" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Menu navigasi">
+  <span class="hb-line"></span>
+  <span class="hb-line"></span>
+  <span class="hb-line"></span>
+</button>
+<div class="hamburger-label" id="hamburgerLabel">Suara</div>
+
+<!-- ==================== NAV DRAWER ==================== -->
+<div class="nav-drawer-overlay" id="navDrawerOverlay" onclick="closeDrawer()"></div>
+<nav class="nav-drawer" id="navDrawer">
+  <button class="nav-drawer-item active" data-page="home" onclick="goToNav('home')">
+    <span class="nd-icon"><span class="voice-visualizer" style="width:22px;height:18px;gap:2px;" aria-hidden="true"><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span></span></span>
+    Suara
+  </button>
+  <button class="nav-drawer-item" data-page="summary" onclick="goToNav('summary')">
+    <span class="nd-icon">🏠</span>Ringkasan
+  </button>
+  <button class="nav-drawer-item" data-page="notes" onclick="goToNav('notes')">
+    <span class="nd-icon">📝</span>Catatan
+  </button>
+  <button class="nav-drawer-item" data-page="shopping" onclick="goToNav('shopping')">
+    <span class="nd-icon">🛒</span>Belanja
+  </button>
+  <button class="nav-drawer-item" data-page="settings" onclick="goToNav('settings')">
+    <span class="nd-icon">⚙️</span>Lainnya
+  </button>
+</nav>
+
 <!-- ==================== VOICE MODAL ==================== -->
 <div class="modal-overlay" id="voiceModal">
   <div class="modal">
@@ -973,6 +1190,10 @@
 
 <!-- ==================== CONFIRM MODAL ==================== -->
 <div class="modal-overlay" id="confirmModal">
+  <div class="confirm-turn-badge" id="confirmTurnBadge" hidden>
+    <span class="dot" aria-hidden="true"></span>
+    Giliran Anda Menjawab
+  </div>
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="confirmTitle">Konfirmasi</div>
@@ -983,6 +1204,23 @@
     </div>
     <div id="confirmBody"></div>
     <div class="confirm-actions" id="confirmActions"></div>
+  </div>
+</div>
+
+<!-- ==================== CONFIRM BANNER (ganti popup konfirmasi) ==================== -->
+<div class="confirm-banner" id="confirmBanner" role="dialog" aria-label="Konfirmasi transaksi">
+  <div class="confirm-banner-typing" id="cbTypingRow">
+    <span class="cb-dots"><span></span><span></span><span></span></span>
+    <span class="cb-typing-text">Catat Aja sedang mengetik...</span>
+  </div>
+  <div id="cbTypeBadge" class="confirm-banner-type-badge" style="display:none;"></div>
+  <div class="confirm-banner-content" id="cbContent"></div>
+  <div class="confirm-banner-amount" id="cbAmount" style="display:none;"></div>
+  <div class="confirm-banner-sub" id="cbSub"></div>
+  <div class="confirm-banner-actions" id="cbActions" style="display:none;"></div>
+  <div class="confirm-banner-voice" id="cbVoiceRow" style="display:none;">
+    <span class="cb-mic-dot"></span>
+    <span id="cbVoiceText">Bilang "ya" atau "tidak"</span>
   </div>
 </div>
 
@@ -3480,20 +3718,232 @@ function clearAllData() {
 }
 
 /* ============ 9. NAVIGATION ============ */
+const PAGE_LABELS = {
+  home: 'Suara', summary: 'Ringkasan',
+  notes: 'Catatan', shopping: 'Belanja', settings: 'Lainnya'
+};
 function goTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  const legacyNav = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (legacyNav) legacyNav.classList.add('active');
+  // Update drawer active state
+  document.querySelectorAll('.nav-drawer-item').forEach(n => n.classList.remove('active'));
+  const drawerItem = document.querySelector(`.nav-drawer-item[data-page="${page}"]`);
+  if (drawerItem) drawerItem.classList.add('active');
+  // Update label
+  const lbl = document.getElementById('hamburgerLabel');
+  if (lbl) lbl.textContent = PAGE_LABELS[page] || page;
   window.scrollTo(0, 0);
 }
 
+/* ── Hamburger drawer helpers ── */
+let _drawerOpen = false;
+function toggleDrawer() {
+  _drawerOpen ? closeDrawer() : openDrawer();
+}
+function openDrawer() {
+  _drawerOpen = true;
+  document.getElementById('navDrawer').classList.add('open');
+  document.getElementById('navDrawerOverlay').classList.add('open');
+  document.getElementById('hamburgerBtn').classList.add('open');
+}
+function closeDrawer() {
+  _drawerOpen = false;
+  document.getElementById('navDrawer').classList.remove('open');
+  document.getElementById('navDrawerOverlay').classList.remove('open');
+  document.getElementById('hamburgerBtn').classList.remove('open');
+}
+function goToNav(page) {
+  closeDrawer();
+  goTo(page);
+}
+
+/* ============ CONFIRM BANNER — ganti popup konfirmasi ============ */
+const ConfirmBanner = {
+  _typeInterval: null,
+  _queue: [],
+  _showing: false,
+
+  show({ typeBadge, typeBadgeClass, content, amount, sub, actions, voiceMode }) {
+    const banner = document.getElementById('confirmBanner');
+    const cbTypingRow = document.getElementById('cbTypingRow');
+    const cbBadge = document.getElementById('cbTypeBadge');
+    const cbContent = document.getElementById('cbContent');
+    const cbAmount = document.getElementById('cbAmount');
+    const cbSub = document.getElementById('cbSub');
+    const cbActions = document.getElementById('cbActions');
+    const cbVoiceRow = document.getElementById('cbVoiceRow');
+
+    // Reset
+    cbContent.textContent = '';
+    cbAmount.style.display = 'none';
+    cbAmount.textContent = '';
+    cbSub.textContent = '';
+    cbActions.style.display = 'none';
+    cbActions.innerHTML = '';
+    cbVoiceRow.style.display = 'none';
+    cbBadge.style.display = 'none';
+    cbTypingRow.style.display = 'flex';
+
+    if (typeBadge) {
+      cbBadge.textContent = typeBadge;
+      cbBadge.className = 'confirm-banner-type-badge ' + (typeBadgeClass || 'info');
+      cbBadge.style.display = 'inline-block';
+    }
+
+    banner.classList.add('show');
+    this._showing = true;
+
+    // Typewriter effect
+    if (this._typeInterval) clearInterval(this._typeInterval);
+    let i = 0;
+    const str = content || '';
+    // Short pause before typing starts
+    setTimeout(() => {
+      cbTypingRow.style.display = 'none';
+      this._typeInterval = setInterval(() => {
+        cbContent.textContent = str.slice(0, i);
+        i++;
+        if (i > str.length) {
+          clearInterval(this._typeInterval);
+          // Show rest after typing done
+          if (amount) { cbAmount.textContent = amount; cbAmount.style.display = 'block'; }
+          if (sub) { cbSub.textContent = sub; }
+          if (actions && actions.length) {
+            cbActions.style.display = 'flex';
+            cbActions.innerHTML = actions.map(a =>
+              `<button class="cb-btn ${a.cls}" onclick="${a.fn}">${a.label}</button>`
+            ).join('');
+          }
+          if (voiceMode) {
+            cbVoiceRow.style.display = 'flex';
+            cbVoiceRow.className = 'confirm-banner-voice ' + (voiceMode === 'listening' ? 'listening' : '');
+            document.getElementById('cbVoiceText').textContent =
+              voiceMode === 'listening' ? 'Bilang "ya" atau "tidak"...' : 'Aplikasi sedang berbicara...';
+          }
+        }
+      }, 22);
+    }, 380);
+  },
+
+  hide() {
+    const banner = document.getElementById('confirmBanner');
+    banner.classList.remove('show');
+    this._showing = false;
+    if (this._typeInterval) { clearInterval(this._typeInterval); this._typeInterval = null; }
+  },
+
+  updateVoiceState(state) {
+    const row = document.getElementById('cbVoiceRow');
+    const txt = document.getElementById('cbVoiceText');
+    if (!row) return;
+    if (!state) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+    row.className = 'confirm-banner-voice ' + (state === 'listening' ? 'listening' : '');
+    if (state === 'listening') txt.textContent = 'Bilang "ya" atau "tidak"...';
+    else if (state === 'speaking') txt.textContent = 'Aplikasi sedang berbicara...';
+    else if (state === 'processing') txt.textContent = 'Memproses jawaban...';
+  }
+};
+
 /* ============ 10. MODAL ============ */
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function openModal(id) {
+  if (id === 'confirmModal') {
+    // Alih-alih popup, baca isi #confirmBody dan tampilkan di banner
+    _showConfirmAsBanner();
+    return;
+  }
+  document.getElementById(id).classList.add('active');
+}
+function closeModal(id) {
+  if (id === 'confirmModal') {
+    ConfirmBanner.hide();
+    return;
+  }
+  document.getElementById(id).classList.remove('active');
+}
+
+function _showConfirmAsBanner() {
+  // Baca data dari elemen confirm yang sudah diisi oleh Intent.*
+  const title = document.getElementById('confirmTitle').textContent || '';
+  const sub   = document.getElementById('confirmSub').textContent || '';
+  const body  = document.getElementById('confirmBody');
+  const actions = document.getElementById('confirmActions');
+
+  // Ekstrak info dari confirmBody HTML
+  const typeEl   = body.querySelector('.confirm-type');
+  const nameEl   = body.querySelector('.confirm-name');
+  const amountEl = body.querySelector('.confirm-amount');
+  const detailEl = body.querySelector('.confirm-detail');
+  const catEl    = body.querySelector('.confirm-category');
+  const emptyEl  = body.querySelector('.empty-state .msg');
+  const recapEl  = body.querySelector('.recap-block');
+
+  let typeBadge = '', typeBadgeClass = 'info';
+  if (typeEl) {
+    typeBadge = typeEl.textContent.trim();
+    if (typeEl.classList.contains('in')) typeBadgeClass = 'in';
+    else if (typeEl.classList.contains('out')) typeBadgeClass = 'out';
+    else if (typeEl.classList.contains('shopping')) typeBadgeClass = 'shopping';
+  }
+
+  // Buat teks konten utama
+  let content = '';
+  if (nameEl) content = nameEl.textContent.trim();
+  else if (emptyEl) content = emptyEl.textContent.trim();
+  else if (recapEl) {
+    // Untuk rekap / query: gabungkan rows
+    const rows = recapEl.querySelectorAll('.recap-row');
+    content = Array.from(rows).map(r => {
+      const lbl = r.querySelector('.label');
+      const val = r.querySelector('.value');
+      return (lbl ? lbl.textContent.trim() : '') + ': ' + (val ? val.textContent.trim() : '');
+    }).join(' · ');
+    if (!content) content = title;
+  }
+  else content = title;
+
+  const amount = amountEl ? amountEl.textContent.trim() : '';
+  let subText = '';
+  if (detailEl) subText += detailEl.textContent.trim();
+  if (catEl) subText += (subText ? ' · ' : '') + catEl.textContent.trim();
+  if (!subText && sub) subText = sub;
+
+  // Tombol aksi dari confirmActions
+  const btnEls = actions ? actions.querySelectorAll('button') : [];
+  const bannerActions = Array.from(btnEls).map(b => {
+    const txt = b.textContent.trim();
+    const onclickStr = b.getAttribute('onclick') || '';
+    // Map ke cb-btn style
+    let cls = 'cb-btn-no';
+    if (b.classList.contains('btn-primary')) cls = 'cb-btn-yes';
+    if (b.classList.contains('btn-danger')) cls = 'cb-btn-no';
+    return { label: txt, fn: onclickStr, cls };
+  });
+
+  // Kalau tidak ada tombol (pure voice flow), tampilkan voice row
+  const hasButtons = bannerActions.length > 0;
+
+  ConfirmBanner.show({
+    typeBadge,
+    typeBadgeClass,
+    content,
+    amount,
+    sub: subText,
+    actions: hasButtons ? bannerActions : [],
+    voiceMode: hasButtons ? null : 'speaking'
+  });
+}
 function setConfirmVoiceIndicator(state) {
+  // Update banner voice row
+  ConfirmBanner.updateVoiceState(state);
+  // Legacy indicator (sudah tidak terlihat tapi biarkan JS tetap jalan)
   const indicator = document.getElementById('confirmVoiceIndicator');
   const label = document.getElementById('confirmVoiceIndicatorText');
+  const overlay = document.getElementById('confirmModal');
+  const turnBadge = document.getElementById('confirmTurnBadge');
   if (!indicator || !label) return;
   const labels = {
     speaking: 'Aplikasi sedang berbicara',
@@ -3503,6 +3953,9 @@ function setConfirmVoiceIndicator(state) {
   indicator.hidden = !state;
   indicator.className = 'confirm-voice-indicator' + (state ? ` ${state}` : '');
   label.textContent = labels[state] || 'Menunggu suara';
+  const isListening = state === 'listening';
+  if (overlay) overlay.classList.toggle('listening-mode', isListening);
+  if (turnBadge) turnBadge.hidden = !isListening;
 }
 function openVoiceModal(mode, options = {}) {
   openModal('voiceModal');
@@ -3550,10 +4003,7 @@ function closeConfirm() {
   if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
   if (Intent._confirmReminderTimeout) { clearTimeout(Intent._confirmReminderTimeout); Intent._confirmReminderTimeout = null; }
   if (Intent._confirmCancelTimeout) { clearTimeout(Intent._confirmCancelTimeout); Intent._confirmCancelTimeout = null; }
-  // Hentikan mic confirm dan null-kan dulu agar onend confirm tidak restart
   Intent._activeConfirmRecognition = null;
-  // Buang event/result yang terlambat dari sesi konfirmasi. Tanpa guard ini,
-  // suara "ya benar" bisa diteruskan ke handler normal setelah popup ditutup.
   Voice._ignoreRecognitionUntil = Date.now() + 700;
   Voice.finalTranscript = '';
   Voice.interimTranscript = '';
@@ -3561,9 +4011,12 @@ function closeConfirm() {
     try { Voice.recognition && Voice.recognition.stop(); } catch (e) {}
   }
   Voice._confirmMode = false;
-  // Kembalikan handler Voice.recognition ke mode normal
   restoreVoiceHandlers();
-  closeModal('confirmModal');
+  // Tutup banner (bukan popup)
+  ConfirmBanner.hide();
+  // Tutup popup lama juga kalau masih ada
+  const legacyModal = document.getElementById('confirmModal');
+  if (legacyModal) legacyModal.classList.remove('active');
   setConfirmVoiceIndicator(null);
   Intent.pendingResult = null;
   Intent.pendingBatch = null;
@@ -3966,10 +4419,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('.modal-overlay').forEach(ov => {
     ov.addEventListener('click', (e) => {
       if (e.target !== ov) return;
-      if (ov.id === 'confirmModal') closeConfirm();
-      else if (ov.id === 'voiceModal') closeVoiceModal();
+      if (ov.id === 'voiceModal') closeVoiceModal();
       else closeModal(ov.id);
     });
+  });
+
+  // Tap di luar banner untuk tutup (jika tidak sedang konfirmasi voice)
+  document.getElementById('confirmBanner').addEventListener('click', (e) => {
+    // Hanya tutup jika klik di area kosong (bukan tombol)
+    if (e.target.tagName === 'BUTTON') return;
   });
 });
 </script>
