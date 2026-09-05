@@ -3665,18 +3665,22 @@ function confirmByVoice() {
   Voice.recognition.onresult = (e) => {
     // Kumpulkan semua teks (final maupun interim) sebagai buffer
     let finalText = '', interimText = '';
+    const resultTexts = [];
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      const t = e.results[i][0].transcript;
+      const result = e.results[i];
+      const t = result[0].transcript;
+      resultTexts.push(t);
+      for (let j = 1; j < result.length; j++) resultTexts.push(result[j].transcript);
       if (e.results[i].isFinal) finalText += t;
       else interimText += t;
     }
-    const heard = (finalText || interimText).toLowerCase().trim();
+    const heard = resultTexts.join(' ').toLowerCase().replace(/\s+/g, ' ').trim();
     if (heard) _confirmBuffer = heard;
 
     // Jangan menunggu isFinal. Pada Chrome/Android, jawaban singkat seperti
     // "ya" atau "benar" sering hanya dikirim sebagai interim lalu sesi mic
     // langsung berakhir; simpan segera saat jawaban positif sudah terdengar.
-    if (/^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|sudah\s+benar|bener|yes|jadi|gas|go|proceed|next|continue|yak|ye|mantap|baik|gass|okee|lakuin|catat|rekam)\b/.test(heard)) {
+    if (/(^|\s)(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|sudah\s+benar|bener|yes|jadi|gas|go|proceed|next|continue|yak|ye|mantap|baik|gass|okee|lakuin|catat|rekam)(?=\s|$)/.test(heard)) {
       handleConfirmVoice([heard]);
       return;
     }
@@ -3749,8 +3753,9 @@ function handleConfirmVoice(alts) {
   if (!Intent.pendingResult && !Intent.pendingBatch) return;
   const yes = /^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|sudah\s+benar|bener|correct|yes|jadi|gas|go|proceed|next|continue|yak|ye|yep|mantap|baik|gass|okee|lakuin|catat|rekam)\b/;
   const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus|jangan|wait|tunggu|hold)\b/;
-  const matched = alts.find(a => yes.test(a));
-  const rejected = alts.find(a => no.test(a));
+  const normalizedAlts = alts.map(a => String(a || '').toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ').trim());
+  const matched = normalizedAlts.find(a => yes.test(a));
+  const rejected = normalizedAlts.find(a => no.test(a));
   if (matched) {
     // Null-kan activeConfirmRecognition lebih dulu agar r.onend tidak restart mic
     Intent._activeConfirmRecognition = null;
