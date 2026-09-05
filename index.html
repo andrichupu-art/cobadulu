@@ -74,6 +74,67 @@
   }
   .card + .card { margin-top: 14px; }
 
+  /* ============ HOME — FOCUS MODE ============ */
+  #page-home {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    padding: 20px;
+    text-align: center;
+  }
+  #page-home.active { display: flex; }
+
+  .home-mic-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+  .home-mic-ring {
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.08);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+    animation: breathe 3s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.04); opacity: 0.85; }
+  }
+  .home-mic-ring .voice-btn {
+    width: 140px; height: 140px;
+    font-size: 56px;
+    margin: 0;
+  }
+  .home-hint {
+    font-size: 18px; font-weight: 600; color: #111827;
+    margin-bottom: 8px;
+  }
+  .home-example {
+    font-size: 13px; color: #9ca3af; font-style: italic;
+    max-width: 260px; line-height: 1.6;
+  }
+  .home-saldo-pill {
+    margin-top: 40px;
+    background: #ffffff;
+    border: 1px solid #eef0f3;
+    border-radius: 999px;
+    padding: 10px 22px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .home-saldo-pill:active { background: #f9fafb; }
+  .home-saldo-pill .pill-label { font-size: 12px; color: #6b7280; }
+  .home-saldo-pill .pill-value { font-size: 15px; font-weight: 600; color: #111827; }
+  .home-saldo-pill .pill-value.in  { color: #10b981; }
+  .home-saldo-pill .pill-value.out { color: #ef4444; }
+  .home-saldo-pill .pill-sep { width: 1px; height: 20px; background: #e5e7eb; }
+
   /* ============ HOME ============ */
   .greeting { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
   .greeting-name { font-size: 22px; font-weight: 600; color: #111827; margin-bottom: 18px; }
@@ -486,6 +547,133 @@
   }
   .login-logo h2 { font-size: 22px; font-weight: 600; color: #111827; }
   .login-logo p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+  /* ============ POLISH PASS ============ */
+  :root {
+    --color-primary: #047857;
+    --color-primary-strong: #065f46;
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-ink: #0f172a;
+    --color-muted: #475569;
+    --color-border: #e2e8f0;
+    --radius-card: 18px;
+    --motion-fast: 160ms;
+    --motion-standard: 240ms;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { background: var(--color-background); color: var(--color-ink); }
+  button, input, textarea { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 3px solid rgba(4, 120, 87, 0.3);
+    outline-offset: 3px;
+  }
+
+  #app { background: var(--color-background); padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .app-header {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom-color: var(--color-border);
+    backdrop-filter: blur(14px);
+  }
+  .app-header h1, .page-title, .greeting-name, .summary-item .value,
+  .summary-balance .value, .setting-item .label, .modal-title,
+  .confirm-name, .confirm-amount, .login-logo h2 { color: var(--color-ink); }
+  .header-sub, .page-sub, .greeting, .setting-item .desc, .form-label,
+  .ai-status, .text-muted, .tx-meta, .summary-item .label { color: var(--color-muted); }
+
+  .page { padding: 24px 20px; }
+  .page-title { letter-spacing: -0.02em; text-wrap: balance; }
+  .page-sub { line-height: 1.55; max-width: 34rem; }
+  .card, .summary-item, .tx-item, .shopping-item, .setting-item,
+  .voice-hero, .home-saldo-pill, .login-card {
+    border-color: var(--color-border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+  }
+  .summary-item, .tx-item, .shopping-item, .setting-item { background: var(--color-surface); }
+  .summary-item .value, .summary-balance .value, .tx-amount,
+  .pill-value { font-variant-numeric: tabular-nums; }
+
+  .btn {
+    min-height: 46px;
+    border-radius: 12px;
+    transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease, transform var(--motion-fast) ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(15, 23, 42, 0.1); }
+  .btn:active { transform: translateY(1px) scale(0.985); box-shadow: none; }
+  .btn-primary { background: var(--color-primary); }
+  .btn-primary:hover { background: var(--color-primary-strong); }
+  .btn-primary:active { background: var(--color-primary-strong); }
+  .btn-secondary { background: #f1f5f9; color: #1e293b; }
+  .btn-secondary:hover { background: #e2e8f0; }
+  .form-input { min-height: 48px; border-color: var(--color-border); }
+  .form-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.12); }
+
+  .voice-btn, .voice-modal-center .big-mic, .login-logo .logo-circle {
+    background: var(--color-primary);
+  }
+  .voice-btn:hover { background: var(--color-primary-strong); transform: scale(1.025); }
+  .voice-btn:active { transform: scale(0.97); }
+  .home-mic-ring { background: rgba(4, 120, 87, 0.1); }
+  .home-hint { color: var(--color-ink); letter-spacing: -0.01em; }
+  .home-example { color: var(--color-muted); }
+  .home-saldo-pill {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    transition: background-color var(--motion-fast) ease, transform var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease;
+  }
+  .home-saldo-pill:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08); }
+  .home-saldo-pill:active { transform: translateY(0) scale(0.99); }
+  .home-saldo-pill .pill-label { color: var(--color-muted); }
+  .home-saldo-pill .pill-value.in { color: var(--color-primary); }
+
+  .quick-action, .nav-item { min-height: 48px; }
+  .quick-action { border-color: var(--color-border); transition: background-color var(--motion-fast) ease, transform var(--motion-fast) ease; }
+  .quick-action:hover { background: #f8fafc; transform: translateY(-2px); }
+  .quick-action:active { transform: translateY(1px) scale(0.985); }
+  .bottom-nav {
+    padding-top: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    border-top-color: var(--color-border);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(14px);
+  }
+  .nav-item { padding: 8px 4px; color: #64748b; }
+  .nav-item:hover, .nav-item.active { color: var(--color-primary); }
+  .nav-item.active { font-weight: 600; }
+  .nav-item .nav-icon { line-height: 1; }
+
+  .modal-overlay { background: rgba(15, 23, 42, 0.62); }
+  .modal { border-radius: 24px 24px 0 0; }
+  .voice-modal-center .transcript, .confirm-card { border-color: var(--color-border); background: #f8fafc; }
+  .toast { top: calc(20px + env(safe-area-inset-top)); }
+
+  @media (max-width: 375px) {
+    .page { padding-left: 16px; padding-right: 16px; }
+    .home-mic-ring { width: 176px; height: 176px; }
+    .home-mic-ring .voice-btn { width: 124px; height: 124px; }
+    .home-saldo-pill { width: 100%; padding-left: 14px; padding-right: 14px; }
+    .pill-value { font-size: 13px !important; }
+  }
+
+  @media (min-width: 768px) {
+    #app { max-width: 720px; }
+    .bottom-nav { max-width: 720px; }
+    .page { padding-left: 32px; padding-right: 32px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -521,37 +709,59 @@
     <div style="font-size:13px; color:#6b7280;" id="headerName"></div>
   </header>
 
-  <!-- PAGE: BERANDA -->
+  <!-- PAGE: BERANDA — hanya mic -->
   <section class="page active" id="page-home">
+    <div class="home-mic-wrap">
+      <div class="home-mic-ring">
+        <button class="voice-btn" id="heroVoiceBtn" onclick="openVoiceModal()" aria-label="Mulai mencatat dengan suara">🎙️</button>
+      </div>
+      <div class="home-hint">Bicara Sekarang</div>
+      <div class="home-example">"Beli bawang 2 kilo 40 ribu"<br/>"Buat daftar belanja tahu, tempe"</div>
+
+      <!-- Saldo ringkas — tap buka tab Ringkasan -->
+      <button class="home-saldo-pill" onclick="goTo('summary')" aria-label="Buka ringkasan saldo">
+        <div>
+          <div class="pill-label">Pemasukan</div>
+          <div class="pill-value in" id="sumIn">Rp 0</div>
+        </div>
+        <div class="pill-sep"></div>
+        <div>
+          <div class="pill-label">Pengeluaran</div>
+          <div class="pill-value out" id="sumOut">Rp 0</div>
+        </div>
+        <div class="pill-sep"></div>
+        <div>
+          <div class="pill-label">Saldo</div>
+          <div class="pill-value" id="sumBalance">Rp 0</div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- PAGE: RINGKASAN (pindahan dari beranda) -->
+  <section class="page" id="page-summary">
     <div class="greeting" id="greetingText">Selamat pagi 👋</div>
     <div class="greeting-name" id="greetingName">Ibu Sari</div>
 
     <div class="summary-grid">
       <div class="summary-item in">
         <div class="label">Pemasukan</div>
-        <div class="value" id="sumIn">Rp 0</div>
+        <div class="value" id="sumIn2">Rp 0</div>
       </div>
       <div class="summary-item out">
         <div class="label">Pengeluaran</div>
-        <div class="value" id="sumOut">Rp 0</div>
+        <div class="value" id="sumOut2">Rp 0</div>
       </div>
     </div>
     <div class="summary-balance">
       <div>
         <div class="label">Saldo hari ini</div>
-        <div class="value" id="sumBalance">Rp 0</div>
+        <div class="value" id="sumBalance2">Rp 0</div>
       </div>
       <div style="font-size:24px;">💰</div>
     </div>
 
-    <!-- VOICE HERO -->
-    <div class="voice-hero">
-      <button class="voice-btn" id="heroVoiceBtn" onclick="openVoiceModal()">🎙️</button>
-      <div class="hint">Bicara Sekarang</div>
-      <div class="example">Contoh: "Beli bawang 2 kilo 40 ribu"</div>
-    </div>
-
-    <div class="quick-actions">
+    <div class="quick-actions" style="margin-top:18px;">
       <button class="quick-action" onclick="quickVoice('Buat daftar belanja')">
         <div class="qa-icon">🛒</div>Daftar Belanja
       </button>
@@ -561,6 +771,12 @@
       <button class="quick-action" onclick="quickVoice('Total belanja hari ini')">
         <div class="qa-icon">📊</div>Rekap Hari Ini
       </button>
+    </div>
+
+    <div class="voice-hero" style="margin-top:18px;">
+      <button class="voice-btn" onclick="openVoiceModal()" aria-label="Catat transaksi dengan suara" style="width:90px;height:90px;font-size:36px;">🎙️</button>
+      <div class="hint">Catat dengan Suara</div>
+      <div class="example">Contoh: "Beli bawang 2 kilo 40 ribu"</div>
     </div>
   </section>
 
@@ -663,16 +879,16 @@
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-page="home" onclick="goTo('home')">
-      <span class="nav-icon">🏠</span>Beranda
+      <span class="nav-icon">🎙️</span>Suara
+    </button>
+    <button class="nav-item" data-page="summary" onclick="goTo('summary')">
+      <span class="nav-icon">🏠</span>Ringkasan
     </button>
     <button class="nav-item" data-page="notes" onclick="goTo('notes')">
       <span class="nav-icon">📝</span>Catatan
     </button>
     <button class="nav-item" data-page="shopping" onclick="goTo('shopping')">
       <span class="nav-icon">🛒</span>Belanja
-    </button>
-    <button class="nav-item" data-page="recap" onclick="goTo('recap')">
-      <span class="nav-icon">📊</span>Rekap
     </button>
     <button class="nav-item" data-page="settings" onclick="goTo('settings')">
       <span class="nav-icon">⚙️</span>Lainnya
@@ -746,6 +962,8 @@ const DB = {
   }
 };
 let state = DB.load();
+let shoppingFollowUpReadyAt = 0;
+let shoppingCaptureMode = false;
 
 /* ============ AI — HELPER BERSAMA (GEMINI & GROQ) ============ */
 function aiSleep(ms) {
@@ -771,17 +989,17 @@ function aiIsTransientStatus(status, detail) {
   if (status === 429 || status === 503) return true;
   return /high demand|overloaded|try again later|rate limit/i.test(detail || '');
 }
-const AI_PARSER_PROMPT_SCHEMA = `{"intent":"create_income|create_expense|create_shopping_list|create_note|query_today|query_week|query_month|query_income|query_expense|query_balance|query_shopping|query_unpurchased|unknown","name":null,"amount":null,"qty":null,"unit":null,"category":null,"items":[],"content":null}`;
+const AI_PARSER_PROMPT_SCHEMA = `{"intent":"create_income|create_expense|create_shopping_list|create_note|query_today|query_week|query_month|query_income|query_expense|query_balance|query_shopping|query_unpurchased|query_insight|query_unit_price|query_last_purchase|unknown","name":null,"amount":null,"qty":null,"unit":null,"category":null,"items":[],"content":null}`;
 function buildAIParserPrompt(text) {
   return `Kamu adalah parser transaksi keuangan berbahasa Indonesia. Ubah kalimat pengguna menjadi JSON saja, tanpa markdown.
 Skema JSON:
 ${AI_PARSER_PROMPT_SCHEMA}
-Aturan: amount harus angka rupiah tanpa titik; qty harus angka; gunakan null jika tidak ada. Untuk daftar belanja, items berisi objek {"name":string,"qty":number|null,"unit":string|null}. Kalimat pengguna: ${text}`;
+Aturan: amount harus angka rupiah tanpa titik; qty harus angka; gunakan null jika tidak ada. Kategori harus salah satu dari: Makanan, Belanja bahan, Tagihan, Transportasi, Kesehatan, Pendidikan, Tempat usaha, Gaji, Penjualan, Hiburan, Rumah tangga, Lainnya. Untuk daftar belanja, items berisi objek {"name":string,"qty":number|null,"unit":string|null}. Kalimat pengguna: ${text}`;
 }
 function normalizeAIResult(value, raw) {
   const allowed = new Set(['create_income','create_expense','create_shopping_list','create_note',
     'query_today','query_week','query_month','query_income','query_expense','query_balance',
-    'query_shopping','query_unpurchased','unknown']);
+    'query_shopping','query_unpurchased','query_insight','query_unit_price','query_last_purchase','unknown']);
   const result = value && typeof value === 'object' ? value : {};
   const intent = allowed.has(result.intent) ? result.intent : 'unknown';
   const parsed = { intent, raw };
@@ -790,10 +1008,16 @@ function normalizeAIResult(value, raw) {
     parsed.amount = Number.isFinite(Number(result.amount)) ? Math.round(Number(result.amount)) : null;
     parsed.qty = Number.isFinite(Number(result.qty)) ? Number(result.qty) : null;
     parsed.unit = typeof result.unit === 'string' ? result.unit : null;
-    parsed.category = typeof result.category === 'string' && result.category ? result.category : NLP.guessCategory(parsed.name, intent);
+    parsed.category = NLP.normalizeCategory(result.category, parsed.name, intent);
+  } else if (intent === 'query_unit_price') {
+    parsed.name = typeof result.name === 'string' ? result.name.trim() || null : null;
+    parsed.unit = typeof result.unit === 'string' ? result.unit.trim() || null : null;
+  } else if (intent === 'query_last_purchase') {
+    parsed.name = typeof result.name === 'string' ? result.name.trim() || null : null;
   } else if (intent === 'create_shopping_list') {
     parsed.items = Array.isArray(result.items) ? result.items.filter(i => i && typeof i.name === 'string').map(i => ({
-      name: i.name.trim(), qty: Number.isFinite(Number(i.qty)) ? Number(i.qty) : null, unit: typeof i.unit === 'string' ? i.unit : null
+      name: i.name.trim(), qty: Number.isFinite(Number(i.qty)) ? Number(i.qty) : null, unit: typeof i.unit === 'string' ? i.unit : null,
+      price: Number.isFinite(Number(i.price)) ? Math.round(Number(i.price)) : null
     })) : [];
   } else if (intent === 'create_note') {
     parsed.content = typeof result.content === 'string' ? result.content.trim() : '';
@@ -1087,43 +1311,189 @@ function showToast(msg, duration = 2200) {
   showToast._t = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-/* ============ TTS — TEXT-TO-SPEECH KONFIRMASI ============ */
+/* ============ LANG — DETEKSI BAHASA OTOMATIS ============ */
+const Lang = {
+  // kata kunci khas tiap bahasa — diurutkan dari yang paling spesifik
+  _signals: {
+    su: /\b(abdi|urang|kuring|meli|ngical|pangaluaran|pangasilan|duit|ieu|tah|atuh|wae|euy|teu|tara|naha|saha|naon|dimana|kumaha|ulang\s*deui|deui|hargana|sabaraha|sareng|jeung|nyaeta|maneh|anjeun|eta)\b/i,
+    jv: /\b(kulo|dalem|aku|tuku|adol|bayar|duwit|iki|kuwi|kae|lan|karo|seko|saka|nggo|kanggo|pira|piro|regane|baleni|mbaleni|meneh|maneh|njupuk|ngedol|nuku|blanja|belanja)\b/i,
+    en: /\b(buy|bought|sell|sold|spend|spent|income|expense|grocery|list|total|balance|today|week|month|repeat|again|what|how much|price|cost|paid|pay|record|note|add|create)\b/i,
+  },
+
+  // deteksi dari teks, kembalikan kode: 'id' | 'su' | 'jv' | 'en'
+  detect(text) {
+    const t = text.toLowerCase();
+    // hitung skor tiap bahasa (jumlah kata kunci yang cocok)
+    let best = 'id', bestScore = 0;
+    for (const [lang, re] of Object.entries(this._signals)) {
+      const matches = t.match(new RegExp(re.source, 'gi'));
+      const score = matches ? matches.length : 0;
+      if (score > bestScore) { bestScore = score; best = lang; }
+    }
+    return best;
+  }
+};
+
+/* ============ TTS — TEXT-TO-SPEECH MULTI BAHASA ============ */
 const TTS = {
-  speak(text) {
+  _lastText: null,
+  _lastLang: 'id',
+
+  // konfigurasi per bahasa
+  _cfg: {
+    id: {
+      ttsLang: 'id-ID',
+      openers: ['Oke,', 'Baik,', 'Sip,', 'Siap,'],
+      noItem: 'barang tidak diketahui',
+      noAmount: 'harga tidak diketahui',
+      noRepeat: 'Belum ada yang perlu diulang.',
+      expense: (o, name, qty, amount) => `${o} abdi nyatet pangaluaran kanggo ${name}${qty} seharga ${amount}. Tos leres?`,
+      income:  (o, name, qty, amount) => `${o} abdi nyatet pangasilan ti ${name}${qty} senilai ${amount}. Tos leres?`,
+      shopping: (o, count, items) => `${o} abdi nyiapkeun daptar balanja ${count} item: ${items}. Bade disimpen?`,
+      and: 'sareng',
+      qty: (q, u) => ` sabantak ${q}${u ? ' ' + u : ''}`,
+    },
+    // ↑ Sunda: pakai ttsLang id-ID (browser tidak punya su-ID), kalimat Sunda
+    su: {
+      ttsLang: 'id-ID',
+      openers: ['Muhun,', 'Sae,', 'Okey,', 'Siap,'],
+      noItem: 'barang teu kanyaho',
+      noAmount: 'harga teu kanyaho',
+      noRepeat: 'Teu acan aya nu kedah diulang.',
+      expense: (o, name, qty, amount) => `${o} abdi nyatet pangaluaran kanggo ${name}${qty} seharga ${amount}. Tos leres?`,
+      income:  (o, name, qty, amount) => `${o} abdi nyatet pangasilan ti ${name}${qty} senilai ${amount}. Tos leres?`,
+      shopping: (o, count, items) => `${o} abdi nyiapkeun daptar balanja ${count} item: ${items}. Bade disimpen?`,
+      and: 'sareng',
+      qty: (q, u) => ` sabantak ${q}${u ? ' ' + u : ''}`,
+    },
+    jv: {
+      ttsLang: 'id-ID',
+      openers: ['Inggih,', 'Sae,', 'Oke,', 'Siap,'],
+      noItem: 'barang mboten mangertos',
+      noAmount: 'rega mboten mangertos',
+      noRepeat: 'Dereng wonten ingkang kedah dipunambali.',
+      expense: (o, name, qty, amount) => `${o} kulo nyathet pangaluaran kangge ${name}${qty} reganipun ${amount}. Sampun leres?`,
+      income:  (o, name, qty, amount) => `${o} kulo nyathet penghasilan saking ${name}${qty} senilai ${amount}. Sampun leres?`,
+      shopping: (o, count, items) => `${o} kulo nyiapaken daptar blanja ${count} item: ${items}. Badhe disimpen?`,
+      and: 'lan',
+      qty: (q, u) => ` cacahipun ${q}${u ? ' ' + u : ''}`,
+    },
+    en: {
+      ttsLang: 'en-US',
+      openers: ['Okay,', 'Got it,', 'Sure,', 'Alright,'],
+      noItem: 'unknown item',
+      noAmount: 'unknown amount',
+      noRepeat: 'Nothing to repeat yet.',
+      expense: (o, name, qty, amount) => `${o} I've recorded an expense for ${name}${qty} costing ${amount}. Does that look right?`,
+      income:  (o, name, qty, amount) => `${o} I've recorded income from ${name}${qty} worth ${amount}. Does that look right?`,
+      shopping: (o, count, items) => `${o} I've prepared a shopping list with ${count} item${count > 1 ? 's' : ''}: ${items}. Ready to save?`,
+      and: 'and',
+      qty: (q, u) => `, ${q}${u ? ' ' + u : ''}`,
+    },
+  },
+  _openerIdx: 0,
+
+  _opener(lang) {
+    const list = (this._cfg[lang] || this._cfg.id).openers;
+    const o = list[this._openerIdx % list.length];
+    this._openerIdx++;
+    return o;
+  },
+
+  // konversi angka rupiah ke kata per bahasa
+  _amountToWords(n, lang) {
+    if (!n || isNaN(n)) return (this._cfg[lang] || this._cfg.id).noAmount;
+    const num = Math.round(n);
+
+    // angka dasar Indonesia (dipakai semua bahasa — angka rupiah tetap ID)
+    const ones = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan',
+                  'sepuluh','sebelas','dua belas','tiga belas','empat belas','lima belas',
+                  'enam belas','tujuh belas','delapan belas','sembilan belas'];
+    const tens  = ['','','dua puluh','tiga puluh','empat puluh','lima puluh',
+                   'enam puluh','tujuh puluh','delapan puluh','sembilan puluh'];
+
+    // khusus Inggris: pakai format angka + "rupiah"
+    if (lang === 'en') {
+      return num.toLocaleString('id-ID') + ' rupiah';
+    }
+
+    function below1000(x) {
+      if (x === 0) return '';
+      if (x < 20) return ones[x];
+      if (x < 100) return tens[Math.floor(x/10)] + (x%10 ? ' ' + ones[x%10] : '');
+      const r = x % 100, h = Math.floor(x/100);
+      return (h === 1 ? 'seratus' : ones[h] + ' ratus') + (r ? ' ' + below1000(r) : '');
+    }
+    if (num === 0) return 'nol rupiah';
+    const juta = Math.floor(num / 1_000_000);
+    const ribu = Math.floor((num % 1_000_000) / 1000);
+    const sisa = num % 1000;
+    const parts = [];
+    if (juta) parts.push((juta === 1 ? 'satu' : below1000(juta)) + ' juta');
+    if (ribu) parts.push((ribu === 1 ? 'seribu' : below1000(ribu) + ' ribu'));
+    if (sisa) parts.push(below1000(sisa));
+    return parts.join(' ') + ' rupiah';
+  },
+
+  speak(text, lang) {
     if (!window.speechSynthesis) return;
-    // batalkan ucapan sebelumnya supaya tidak tumpuk
     window.speechSynthesis.cancel();
+    this._lastText = text;
+    this._lastLang = lang || 'id';
     const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = 'id-ID';
-    utt.rate = 0.95;
-    utt.pitch = 1;
+    const ttsLang = (this._cfg[this._lastLang] || this._cfg.id).ttsLang;
+    utt.lang   = ttsLang;
+    utt.rate   = 1.05;
+    utt.pitch  = 1.1;
     utt.volume = 1;
-    // pilih suara bahasa Indonesia jika tersedia
     const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find(v => v.lang.startsWith('id'));
-    if (idVoice) utt.voice = idVoice;
+    const voice = voices.find(v => v.lang === ttsLang)
+                || voices.find(v => v.lang.startsWith(ttsLang.split('-')[0]));
+    if (voice) utt.voice = voice;
     window.speechSynthesis.speak(utt);
   },
 
   confirmTransaction(parsed) {
-    const type = parsed.intent === 'create_income' ? 'Pemasukan' : 'Pengeluaran';
-    const name = parsed.name || 'tidak diketahui';
-    const amount = parsed.amount
-      ? parsed.amount.toLocaleString('id-ID') + ' rupiah'
-      : 'harga tidak diketahui';
-    const qtyPart = parsed.qty
-      ? ', ' + parsed.qty + (parsed.unit ? ' ' + parsed.unit : '')
-      : '';
-    this.speak(`${type}: ${name}${qtyPart}, ${amount}. Simpan?`);
+    const lang   = parsed._lang || Lang.detect(parsed.raw || '');
+    const cfg    = this._cfg[lang] || this._cfg.id;
+    const opener = this._opener(lang);
+    const isIncome = parsed.intent === 'create_income';
+    const name   = parsed.name || cfg.noItem;
+    const amount = this._amountToWords(parsed.amount, lang);
+    const qty    = parsed.qty ? cfg.qty(parsed.qty, parsed.unit) : '';
+    const kalimat = isIncome
+      ? cfg.income(opener, name, qty, amount)
+      : cfg.expense(opener, name, qty, amount);
+    this.speak(kalimat, lang);
   },
 
   confirmShopping(parsed) {
     if (!parsed.items || parsed.items.length === 0) return;
-    const itemNames = parsed.items.map(i => {
-      const qty = i.qty ? i.qty + (i.unit ? ' ' + i.unit : '') + ' ' : '';
-      return qty + i.name;
-    }).join(', ');
-    this.speak(`Daftar belanja: ${itemNames}. Simpan?`);
+    const lang   = parsed._lang || Lang.detect(parsed.raw || '');
+    const cfg    = this._cfg[lang] || this._cfg.id;
+    const opener = this._opener(lang);
+    const count  = parsed.items.length;
+    const itemList = parsed.items.map(i =>
+      i.qty ? `${i.name} ${i.qty}${i.unit ? ' ' + i.unit : ''}` : i.name
+    );
+    let itemPhrase;
+    if (itemList.length === 1) {
+      itemPhrase = itemList[0];
+    } else {
+      const last = itemList.pop();
+      itemPhrase = itemList.join(', ') + `, ${cfg.and} ` + last;
+    }
+    this.speak(cfg.shopping(opener, count, itemPhrase), lang);
+  },
+
+  repeat() {
+    if (this._lastText) {
+      this.speak(this._lastText, this._lastLang);
+    } else {
+      // ucapkan "belum ada" dalam bahasa terakhir yang terdeteksi
+      const cfg = this._cfg[this._lastLang] || this._cfg.id;
+      this.speak(cfg.noRepeat, this._lastLang);
+    }
   },
 
   stop() {
@@ -1229,6 +1599,13 @@ const NLP = {
     if (!text) return null;
     const t = text.toLowerCase();
 
+    // format singkat harga: "2k" = 2.000
+    const kMatch = t.match(/\b(\d+(?:[.,]\d+)?)\s*k\b/);
+    if (kMatch) {
+      const n = parseFloat(kMatch[1].replace(',', '.'));
+      if (!isNaN(n)) return Math.round(n * 1000);
+    }
+
     // "Rp40.000" / "Rp 40.000" / "40.000"
     const rpMatch = t.match(/rp\s?(\d{1,3}(?:[.\s]\d{3})+|\d+(?:[.,]\d+)?)/);
     if (rpMatch) {
@@ -1309,23 +1686,33 @@ const NLP = {
 
     // pertanyaan / query
     if (/(apa|yang)\s+(yang\s+)?belum\s+dibeli|belum\s+dibeli|sudah\s+lengkap/.test(t)) return 'query_unpurchased';
-    if (/(total|berapa|rekap|ringkasan).*(hari\s+ini|hari\s+ini)/.test(t) || /total\s+belanja\s+hari\s+ini/.test(t)) return 'query_today';
+    // ulangi ucapan terakhir — Indonesia + Sunda + Jawa + Inggris
+    if (/^(ulangi|ulang|ulang\s*lagi|ulangi\s*lagi|apa\s+tadi|tadi\s+apa|coba\s+lagi|tidak\s+terdengar|kurang\s+jelas|tidak\s+jelas|ulangi\s*dong|ulangi\s*ya|ulang\s*deui|deui\s+ulang|baleni|mbaleni\s+meneh|repeat|say\s+again|again|what\s+did\s+you\s+say|pardon)/.test(t)) return 'repeat_last';
+
+    // query
     if (/(total|berapa).*(minggu\s+ini|mingguan)/.test(t)) return 'query_week';
     if (/(total|berapa).*(bulan\s+ini|bulanan)/.test(t)) return 'query_month';
     if (/pemasukan|pendapatan|penjualan/.test(t) && /(berapa|total)/.test(t)) return 'query_income';
     if (/pengeluaran|belanja|keluar/.test(t) && /(berapa|total)/.test(t)) return 'query_expense';
+    if (/(terakhir\s+(beli|dibeli|membeli)|kapan\s+(beli|dibeli|membeli)|pembelian\s+terakhir)/.test(t)) return 'query_last_purchase';
+    if (/(berapa\s+harga|harga\s+(satu|1|per|tiap)|harga\s+per)/.test(t)) return 'query_unit_price';
     if (/saldo|sisa|balance/.test(t)) return 'query_balance';
+    if (/(paling banyak|terbesar|boros|analisis|analisa|ringkas|saran|hemat)/.test(t)) return 'query_insight';
+    if (/(ulangi|ulang|bacakan|sebutkan).*(daftar|list|belanja)/.test(t)) return 'query_shopping';
     if (/daftar\s+belanja|shopping/.test(t) && /(tampilkan|lihat|apa|cek)/.test(t)) return 'query_shopping';
 
-    // daftar belanja
-    if (/(buat|buatkan|tambah|catat)\s+(daftar\s+belanja|belanjaan)/.test(t) || /^daftar\s+belanja/.test(t)) return 'create_shopping_list';
+    // daftar belanja — ID + Sunda + Jawa + Inggris
+    if (/(buat|buatkan|tambah|catat)\s+(daftar\s+belanja|belanjaan)/.test(t) || /^daftar\s+belanja/.test(t)
+      || /daptar\s+balanja/.test(t) || /daptar\s+blanja/.test(t)
+      || /(create|make|add)\s+(shopping\s+list|grocery\s+list)/.test(t) || /^shopping\s+list/.test(t)) return 'create_shopping_list';
 
-    // simpan catatan
-    if (/^(catat|ingat|ingat-ingat|note)\s*,?\s*(bahwa|kalau)?/.test(t) || /ingat(?:kan)?\s+saya/.test(t)) return 'create_note';
+    // simpan catatan — ID + Sunda + Jawa + Inggris
+    if (/^(catat|ingat|ingat-ingat|note)\s*,?\s*(bahwa|kalau)?/.test(t) || /ingat(?:kan)?\s+saya/.test(t)
+      || /^(inget|catet)\b/.test(t) || /^(note|remember|record\s+a\s+note)\b/.test(t)) return 'create_note';
 
-    // transaksi
-    const incomeKw = /jual|terjual|dapat|terima|dibayar|masuk|penjualan|pendapatan|gaji|bonus/;
-    const expenseKw = /beli|belanja|bayar|keluar|habis|belanjain|beli-in|beliin|beli in/;
+    // transaksi — ID + Sunda + Jawa + Inggris
+    const incomeKw = /jual|terjual|dapat|terima|dibayar|masuk|penjualan|pendapatan|gaji|bonus|ngical|dijual|adol|oleh|ngedol|earn|receive|sell|sold|income|revenue/;
+    const expenseKw = /beli|belanja|bayar|keluar|habis|belanjain|meli|tuku|blanja|blanjain|buy|bought|spend|spent|expense|purchase|paid|pay/;
 
     if (incomeKw.test(t)) return 'create_income';
     if (expenseKw.test(t)) return 'create_expense';
@@ -1367,17 +1754,37 @@ const NLP = {
     return t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   },
 
-  // auto kategori
+  normalizeCategory(value, name, intent) {
+    const aliases = {
+      'makanan': 'Makanan', 'minuman': 'Makanan', 'kuliner': 'Makanan',
+      'sembako': 'Belanja bahan', 'bahan makanan': 'Belanja bahan', 'groceries': 'Belanja bahan',
+      'listrik': 'Tagihan', 'tagihan rutin': 'Tagihan', 'transport': 'Transportasi',
+      'medis': 'Kesehatan', 'sekolah': 'Pendidikan', 'sewa': 'Tempat usaha',
+      'salary': 'Gaji', 'jualan': 'Penjualan', 'rekreasi': 'Hiburan',
+      'kebutuhan rumah': 'Rumah tangga', 'rumah': 'Rumah tangga'
+    };
+    const normalized = String(value || '').trim().toLowerCase();
+    if (aliases[normalized]) return aliases[normalized];
+    const allowed = ['Makanan', 'Belanja bahan', 'Tagihan', 'Transportasi', 'Kesehatan',
+      'Pendidikan', 'Tempat usaha', 'Gaji', 'Penjualan', 'Hiburan', 'Rumah tangga', 'Lainnya'];
+    const exact = allowed.find(item => item.toLowerCase() === normalized);
+    return exact || this.guessCategory(name, intent);
+  },
+
+  // auto kategori berbasis kata kunci untuk fallback tanpa AI
   guessCategory(name, intent) {
     const n = (name || '').toLowerCase();
-    if (/^(nasi|lauk|makan|masak|sayur|daging|ayam|ikan|telur|bawang|cabai|cabe|beras|minyak|gula|garam|tempe|tahu|bumbu|santan|merica|kecap|saos|sausage|sosis|bakso|mie|bihun)/.test(n)) return 'Belanja bahan';
-    if (/listrik|air|pdam|internet|wifi|tv|telepon|pulsa|data/.test(n)) return 'Tagihan';
+    if (/kopi|teh|roti|nasi|lauk|makan|masak|sayur|daging|ayam|ikan|telur/.test(n)) return 'Makanan';
+    if (/bawang|cabai|cabe|beras|minyak|gula|garam|tempe|tahu|bumbu|santan|merica|kecap|saos|sosis|bakso|mie|bihun/.test(n)) return 'Belanja bahan';
+    if (/listrik|air|pdam|internet|wifi|tv|telepon|pulsa|data|langganan|netflix|spotify/.test(n)) return 'Tagihan';
     if (/bensin|bbm|pertalite|pertamax|solar|ojek|gojek|grab|transport|taksi/.test(n)) return 'Transportasi';
     if (/gaji|upah|honor|bonus/.test(n)) return 'Gaji';
     if (/sewa|kontrak|kos/.test(n)) return 'Tempat usaha';
     if (/jual|penjualan|jualan|order/.test(n)) return 'Penjualan';
     if (/obat|dokter|rumah sakit|klinik|berobat/.test(n)) return 'Kesehatan';
     if (/sekolah|buku|seragam|les|kursus/.test(n)) return 'Pendidikan';
+    if (/film|bioskop|game|rekreasi|liburan|tiket/.test(n)) return 'Hiburan';
+    if (/sabun|deterjen|lampu|perabot|alat rumah|kebersihan/.test(n)) return 'Rumah tangga';
     if (intent === 'create_income') return 'Pemasukan';
     return 'Lainnya';
   },
@@ -1385,7 +1792,7 @@ const NLP = {
   // parse lengkap
   parse(text) {
     const intent = this.detectIntent(text);
-    const result = { intent, raw: text };
+    const result = { intent, raw: text, _lang: Lang.detect(text) };
 
     if (intent === 'create_income' || intent === 'create_expense') {
       result.name = this.extractItemName(text, intent);
@@ -1403,6 +1810,13 @@ const NLP = {
       let content = text.replace(/^(catat|ingat|ingat-ingat|ingatkan)\s*,?\s*(bahwa|kalau)?\s*/i, '').trim();
       result.content = content.charAt(0).toUpperCase() + content.slice(1);
     }
+    else if (intent === 'query_unit_price') {
+      result.name = this.extractUnitPriceItem(text);
+      result.unit = this.extractQueryUnit(text);
+    }
+    else if (intent === 'query_last_purchase') {
+      result.name = this.extractLastPurchaseItem(text);
+    }
     else if (intent === 'query_today' || intent === 'query_week' || intent === 'query_month') {
       // tidak butuh field tambahan
     }
@@ -1413,25 +1827,125 @@ const NLP = {
     return result;
   },
 
+  extractUnitPriceItem(text) {
+    let name = (text || '').toLowerCase().trim();
+    name = name.replace(/^(berapa\s+harga|harga)\s+(satu|1|per|tiap)?\s*(kg|kilo|kilogram|gram|liter|l|bungkus|pcs|buah|batang|kotak)?\s*/i, '');
+    name = name.replace(/\b(harga\s+satuan|satuan|nya|dong|ya)\b/gi, ' ');
+    name = name.replace(/\s+/g, ' ').trim().replace(/[?.!,]+$/, '');
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : null;
+  },
+
+  extractQueryUnit(text) {
+    const m = (text || '').toLowerCase().match(/\b(kg|kilo|kilogram|gram|liter|l|bungkus|pak|pcs|buah|batang|kotak)\b/);
+    if (!m) return null;
+    return { kilo: 'kg', kilogram: 'kg', l: 'liter', pak: 'bungkus' }[m[1]] || m[1];
+  },
+
+  extractLastPurchaseItem(text) {
+    let name = (text || '').toLowerCase().trim();
+    name = name.replace(/^(kapan|berapa|apa)\s+(terakhir\s+)?(beli|dibeli|membeli|pembelian)\s*/i, '');
+    name = name.replace(/\b(terakhir\s+(beli|dibeli|membeli)|pembelian\s+terakhir|terakhirnya|kapan|berapa|harganya|berapa\s+harga)\b/gi, ' ');
+    name = name.replace(/\s+/g, ' ').trim().replace(/[?.!,]+$/, '');
+    return name ? name.charAt(0).toUpperCase() + name.slice(1) : null;
+  },
+
+  looksLikeShoppingFollowUp(text) {
+    return /^(yang perlu dibeli|yang harus dibeli|perlu dibeli|harus dibeli|tambahkan ke daftar|masukkan ke daftar)\b/i.test((text || '').trim());
+  },
+
   // parse daftar belanja: "buat daftar belanja bawang 2 kilo, tahu 2 kilo dan tempe 3 kilo"
   parseShoppingItems(text) {
     let t = text.toLowerCase()
       .replace(/^(buat|buatkan|tambah|catat)\s+(daftar\s+belanja|belanjaan)\s*/i, '')
+      .replace(/^(yang perlu dibeli|yang harus dibeli|perlu dibeli|harus dibeli|tambahkan ke daftar|masukkan ke daftar)\s*[:：]?\s*/i, '')
       .trim();
     // pisah oleh koma / dan / serta
     const parts = t.split(/\s*(?:,|\s+dan\s+|\s+serta\s+|\s+plus\s+)\s*/i).filter(Boolean);
     const items = [];
     for (const part of parts) {
-      const q = this.extractQuantity(part);
+      const priceMatch = part.match(/(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|juta|jt)\b/i);
+      const hasUnit = /\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat)\b/i.test(part);
+      const q = priceMatch && !hasUnit ? { qty: null, unit: null } : this.extractQuantity(part);
+      const price = priceMatch ? this.extractAmount(priceMatch[0]) : null;
       // nama = bagian tanpa angka & satuan
       let name = part
-        .replace(/\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat)?/gi, '')
+        .replace(/\d+(?:[.,]\d+)?\s*(?:k|rb|ribu|juta|jt|kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat)?/gi, '')
         .replace(/\s+/g, ' ').trim();
       if (!name) continue;
       name = name.charAt(0).toUpperCase() + name.slice(1);
-      items.push({ name, qty: q.qty, unit: q.unit });
+      items.push({ name, qty: q.qty, unit: q.unit, price });
     }
     return items;
+  },
+
+  // ── BATCH PARSER ──────────────────────────────────────────────
+  // Deteksi apakah kalimat berisi beberapa item transaksi sekaligus.
+  // Pola yang didukung:
+  //   "beli pisang 1kg 20000, jagung 3kg 30000, tempe 2kg 10000"
+  //   "pisang 1 kg 20 ribu jagung 3 kg 30 ribu tempe 2 kg 10 ribu"
+  //   "beli pisang 20rb, beli jagung 30rb"
+  // Mengembalikan array parsed[] atau null kalau hanya satu item.
+  parseBatch(text, baseIntent) {
+    const t = text.trim();
+
+    // Strategi 1: ada koma atau "dan/serta" yang memisahkan segmen dengan harga
+    // Contoh: "pisang 1kg 20000, jagung 3kg 30000"
+    // Pisah dulu di koma / "dan" / "serta" / "terus" / "kemudian"
+    const separators = /\s*[,;]\s*|\s+(?:dan|serta|terus|kemudian|plus|juga|sama)\s+/i;
+    const rawParts = t
+      .replace(/^(beli|belanja|bayar|catat|tadi\s+beli|saya\s+beli)\s+/i, '')
+      .split(separators)
+      .map(p => p.trim())
+      .filter(Boolean);
+
+    // Kalau hanya satu bagian, coba strategi 2 (pisah per item berdasarkan pola nama+harga)
+    if (rawParts.length <= 1) {
+      // Strategi 2: scan kalimat untuk pola [nama] [qty?] [harga]
+      // Contoh: "pisang 1kg 20000 jagung 3kg 30000 tempe 2kg 10000"
+      // Regex: nama (1-3 kata non-angka) + opsional qty + harga (angka >= 100 atau "X ribu/rb")
+      const segRe = /([a-zA-Z\u00C0-\u024F]+(?:\s+[a-zA-Z\u00C0-\u024F]+){0,2})\s+(?:(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|gram|g|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\s+)?(\d+(?:[.,]\d+)?(?:\s*(?:ribu|rb|juta|jt))?|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas)\s+(?:ribu|ratus\s+ribu|juta)\b)/gi;
+      const matches = [...t.matchAll(segRe)];
+      if (matches.length >= 2) {
+        return matches.map(m => {
+          const segText = m[0];
+          const name = m[1].trim();
+          const amount = this.extractAmount(segText);
+          const q = this.extractQuantity(segText);
+          return {
+            intent: baseIntent,
+            raw: segText,
+            _lang: Lang.detect(text),
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            amount,
+            qty: q.qty,
+            unit: q.unit,
+            category: this.guessCategory(name, baseIntent)
+          };
+        }).filter(r => r.name && r.amount);
+      }
+      return null; // kalimat tunggal, biarkan flow normal
+    }
+
+    // tiap bagian diparse satu per satu
+    const results = rawParts.map(part => {
+      // kalau bagian dimulai dengan kata kerja (beli, jual...), strip dulu
+      const cleaned = part.replace(/^(beli|belanja|bayar|jual)\s+/i, '').trim();
+      const name = this.extractItemName(cleaned, baseIntent);
+      const amount = this.extractAmount(cleaned);
+      const q = this.extractQuantity(cleaned);
+      return {
+        intent: baseIntent,
+        raw: part,
+        _lang: Lang.detect(text),
+        name,
+        amount,
+        qty: q.qty,
+        unit: q.unit,
+        category: this.guessCategory(name, baseIntent)
+      };
+    }).filter(r => r.name && r.amount);
+
+    return results.length >= 2 ? results : null;
   }
 };
 
@@ -1542,8 +2056,47 @@ const Voice = {
 /* ============ 5. INTENT HANDLER ============ */
 const Intent = {
   pendingResult: null,
+  pendingBatch: null,
 
   async handle(text) {
+    // cek "ulangi" dulu sebelum apapun — tidak perlu AI, langsung eksekusi
+    const quickIntent = NLP.detectIntent(text);
+    if (quickIntent === 'repeat_last') {
+      closeVoiceModal();
+      TTS.repeat();
+      return;
+    }
+
+    // Konfirmasi tanpa sentuhan setelah aplikasi membacakan hasil.
+    const voiceAnswer = (text || '').toLowerCase().trim();
+    const confirmable = this.pendingBatch || (this.pendingResult && ['create_income', 'create_expense', 'create_shopping_list'].includes(this.pendingResult.intent));
+    if (confirmable && /^(ya|iya|oke|ok|benar|betul|simpan|lanjutkan|yes)\b/.test(voiceAnswer)) {
+      if (this.pendingBatch) saveBatch();
+      else if (this.pendingResult.intent === 'create_shopping_list') saveShoppingList();
+      else saveTransaction();
+      return;
+    }
+    if ((this.pendingResult || this.pendingBatch) && /^(batal|batalkan|tidak|nggak|enggak|cancel|no)\b/.test(voiceAnswer)) {
+      closeConfirm();
+      closeVoiceModal();
+      TTS.speak('Baik, dibatalkan.', 'id');
+      return;
+    }
+
+    // Konteks lanjutan: setelah mencatat pembelian, ucapan "yang perlu dibeli..."
+    // dianggap sebagai daftar belanja selama dua menit berikutnya.
+    if (shoppingCaptureMode || (shoppingFollowUpReadyAt && Date.now() < shoppingFollowUpReadyAt && NLP.looksLikeShoppingFollowUp(text))) {
+      shoppingFollowUpReadyAt = 0;
+      shoppingCaptureMode = false;
+      const items = NLP.parseShoppingItems(text);
+      if (items.length) {
+        this.showShoppingConfirm({ intent: 'create_shopping_list', raw: text, items });
+        return;
+      }
+      this.askShoppingItems();
+      return;
+    }
+
     let parsed = NLP.parse(text);
     const providers = [];
     if (GroqAI.getKey()) providers.push(GroqAI);
@@ -1565,9 +2118,16 @@ const Intent = {
 
     switch (parsed.intent) {
       case 'create_income':
-      case 'create_expense':
-        this.showTransactionConfirm(parsed);
+      case 'create_expense': {
+        // coba dulu apakah kalimat berisi beberapa item sekaligus
+        const batch = NLP.parseBatch(text, parsed.intent);
+        if (batch && batch.length >= 2) {
+          this.showBatchConfirm(batch);
+        } else {
+          this.showTransactionConfirm(parsed);
+        }
         break;
+      }
       case 'create_shopping_list':
         this.showShoppingConfirm(parsed);
         break;
@@ -1591,6 +2151,15 @@ const Intent = {
         break;
       case 'query_balance':
         this.showQuery('balance');
+        break;
+      case 'query_unit_price':
+        this.showUnitPrice(parsed);
+        break;
+      case 'query_last_purchase':
+        this.showLastPurchase(parsed);
+        break;
+      case 'query_insight':
+        this.showInsight();
         break;
       case 'query_shopping':
       case 'query_unpurchased':
@@ -1655,6 +2224,46 @@ const Intent = {
     }
   },
 
+  // ── BATCH CONFIRM ─────────────────────────────────────────────
+  showBatchConfirm(items) {
+    closeVoiceModal();
+    const isIncome = items[0].intent === 'create_income';
+    const total = items.reduce((s, i) => s + (i.amount || 0), 0);
+
+    const body    = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = `${items.length} transaksi siap disimpan`;
+    document.getElementById('confirmSub').textContent   = `Total: ${formatRupiah(total)}`;
+
+    let html = '';
+    items.forEach((it, idx) => {
+      html += `
+        <div class="confirm-card" style="margin-bottom:10px; position:relative;">
+          <button onclick="removeBatchItem(${idx})" style="position:absolute;top:10px;right:10px;color:#9ca3af;font-size:16px;padding:4px 8px;">✕</button>
+          <div class="confirm-type ${isIncome ? 'in' : 'out'}">${isIncome ? 'Pemasukan' : 'Pengeluaran'}</div>
+          <div class="confirm-name">${escapeHtml(it.name)}</div>
+          ${it.qty ? `<div class="confirm-detail">${it.qty} ${it.unit || ''}</div>` : ''}
+          <div class="confirm-amount">${formatRupiah(it.amount)}</div>
+          <div class="confirm-category">Kategori: ${escapeHtml(it.category)}</div>
+        </div>`;
+    });
+    body.innerHTML = html;
+    actions.innerHTML = `
+      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
+      <button class="btn btn-primary" onclick="saveBatch()">Simpan Semua</button>
+    `;
+    this.pendingBatch = items;
+    openModal('confirmModal');
+
+    // bacakan ringkasan batch
+    const lang   = items[0]._lang || 'id';
+    const cfg    = TTS._cfg[lang] || TTS._cfg.id;
+    const opener = TTS._opener(lang);
+    const names  = items.map(i => i.name).join(', ');
+    const totalWords = TTS._amountToWords(total, lang);
+    TTS.speak(`${opener} saya catat ${items.length} pengeluaran: ${names}. Total ${totalWords}. Sudah benar?`, lang);
+  },
+
   showShoppingConfirm(parsed) {
     closeVoiceModal();
     if (!parsed.items || parsed.items.length === 0) {
@@ -1671,6 +2280,7 @@ const Intent = {
       html += `<div style="padding:6px 0; display:flex; justify-content:space-between; border-bottom:1px solid #eef0f3;">`;
       html += `<div><div style="font-weight:500;">${escapeHtml(it.name)}</div>`;
       if (it.qty) html += `<div class="confirm-detail">${it.qty} ${it.unit || ''}</div>`;
+      if (it.price) html += `<div class="confirm-detail">Perkiraan harga: ${formatRupiah(it.price)}</div>`;
       html += `</div></div>`;
     }
     html += `</div>`;
@@ -1685,6 +2295,16 @@ const Intent = {
 
     // bacakan daftar belanja sebagai konfirmasi suara
     TTS.confirmShopping(parsed);
+  },
+
+  askShoppingItems() {
+    closeVoiceModal();
+    shoppingCaptureMode = true;
+    shoppingFollowUpReadyAt = Date.now() + 120000;
+    openVoiceModal();
+    const status = document.getElementById('voiceStatus');
+    if (status) status.textContent = 'Sebutkan barang yang perlu dibeli...';
+    TTS.speak('Sebutkan barang yang perlu dibeli.', 'id');
   },
 
   createNote(parsed) {
@@ -1755,6 +2375,106 @@ const Intent = {
     openModal('confirmModal');
   },
 
+  showUnitPrice(parsed) {
+    closeVoiceModal();
+    const wanted = (parsed.name || '').toLowerCase().trim();
+    const wantedUnit = parsed.unit || null;
+    const matches = state.transactions.filter(t => {
+      if (t.type !== 'expense' || !t.name || !Number(t.amount) || !Number(t.qty)) return false;
+      const name = t.name.toLowerCase();
+      const sameName = wanted && (name.includes(wanted) || wanted.includes(name));
+      const sameUnit = !wantedUnit || !t.unit || t.unit === wantedUnit;
+      return sameName && sameUnit;
+    });
+    const totalAmount = matches.reduce((sum, t) => sum + Number(t.amount), 0);
+    const totalQty = matches.reduce((sum, t) => sum + Number(t.qty), 0);
+    const unitPrice = totalQty ? Math.round(totalAmount / totalQty) : null;
+    const unitLabel = wantedUnit || (matches[0] && matches[0].unit) || 'satuan';
+    const body = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Harga satuan';
+    document.getElementById('confirmSub').textContent = wanted ? `Pencarian: ${parsed.name}` : 'Nama barang belum disebutkan';
+
+    if (!wanted) {
+      body.innerHTML = `<div class="empty-state"><div class="emoji">🔎</div><div class="msg">Sebutkan nama barang yang ingin dicari.</div></div>`;
+    } else if (!unitPrice) {
+      body.innerHTML = `<div class="empty-state"><div class="emoji">📊</div><div class="msg">Belum ada transaksi ${escapeHtml(parsed.name)} dengan jumlah dan satuan yang bisa dihitung.</div></div>`;
+    } else {
+      body.innerHTML = `<div class="confirm-card"><div class="confirm-type shopping">Perhitungan otomatis</div><div class="confirm-name">${escapeHtml(parsed.name)}</div><div class="confirm-amount">${formatRupiah(unitPrice)} / ${escapeHtml(unitLabel)}</div><div class="confirm-detail">Dihitung dari ${totalQty} ${escapeHtml(unitLabel)} dengan total ${formatRupiah(totalAmount)}.</div></div>`;
+      TTS.speak(`Harga ${parsed.name} sekitar ${TTS._amountToWords(unitPrice, 'id')} per ${unitLabel}.`, 'id');
+    }
+    actions.innerHTML = `<button class="btn btn-primary btn-block" onclick="closeConfirm()">Mengerti</button>`;
+    openModal('confirmModal');
+  },
+
+  showLastPurchase(parsed) {
+    closeVoiceModal();
+    const wanted = (parsed.name || '').toLowerCase().trim();
+    const matches = state.transactions
+      .filter(t => t.type === 'expense' && t.name && wanted && (t.name.toLowerCase().includes(wanted) || wanted.includes(t.name.toLowerCase())))
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    const body = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Pembelian terakhir';
+    document.getElementById('confirmSub').textContent = wanted ? `Pencarian: ${parsed.name}` : 'Nama barang belum disebutkan';
+
+    if (!wanted || !matches.length) {
+      body.innerHTML = `<div class="empty-state"><div class="emoji">🔎</div><div class="msg">Belum ditemukan riwayat pembelian untuk ${wanted ? escapeHtml(parsed.name) : 'barang tersebut'}.</div></div>`;
+    } else {
+      const latest = matches[0];
+      const unitPrice = latest.qty && latest.amount ? Math.round(Number(latest.amount) / Number(latest.qty)) : null;
+      const unit = latest.unit || 'satuan';
+      const previous = matches[1];
+      const comparison = previous && Number(previous.amount) !== Number(latest.amount)
+        ? `<div class="confirm-category">Pembelian sebelumnya: ${formatRupiah(previous.amount)} pada ${formatDate(previous.date)}.</div>` : '';
+      body.innerHTML = `<div class="confirm-card"><div class="confirm-type out">Pembelian terakhir</div><div class="confirm-name">${escapeHtml(latest.name)}</div><div class="confirm-detail">${formatDate(latest.date)} · ${latest.qty ? `${latest.qty} ${escapeHtml(unit)}` : 'jumlah tidak dicatat'}</div><div class="confirm-amount">${formatRupiah(latest.amount)}</div>${unitPrice ? `<div class="confirm-detail">Harga satuan: ${formatRupiah(unitPrice)} / ${escapeHtml(unit)}</div>` : ''}<div class="confirm-category">Kategori: ${escapeHtml(latest.category || 'Lainnya')}</div>${comparison}</div>`;
+      const spokenUnit = latest.unit ? ` per ${latest.unit}` : '';
+      const spokenQty = latest.qty ? ` sebanyak ${latest.qty} ${latest.unit || 'satuan'}` : '';
+      const spokenUnitPrice = unitPrice ? ` Harga satuannya ${TTS._amountToWords(unitPrice, 'id')}${spokenUnit}.` : '';
+      TTS.speak(`Pembelian ${latest.name} terakhir pada ${formatDate(latest.date)},${spokenQty}, dengan harga ${TTS._amountToWords(latest.amount, 'id')}.${spokenUnitPrice}`, 'id');
+    }
+    actions.innerHTML = `<button class="btn btn-primary btn-block" onclick="closeConfirm()">Mengerti</button>`;
+    openModal('confirmModal');
+  },
+
+  showInsight() {
+    closeVoiceModal();
+    const monthTx = state.transactions.filter(t => isThisMonth(t.date));
+    const expenses = monthTx.filter(t => t.type === 'expense');
+    const income = monthTx.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const expense = expenses.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const byCategory = {};
+    expenses.forEach(t => {
+      const category = t.category || 'Lainnya';
+      byCategory[category] = (byCategory[category] || 0) + (Number(t.amount) || 0);
+    });
+    const top = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
+    const body = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Wawasan bulan ini';
+    document.getElementById('confirmSub').textContent = `${monthTx.length} transaksi dianalisis`;
+
+    if (!monthTx.length) {
+      body.innerHTML = `<div class="empty-state"><div class="emoji">💡</div><div class="msg">Belum cukup data untuk membuat wawasan.<br/>Mulai catat beberapa transaksi dulu.</div></div>`;
+    } else {
+      const share = top && expense ? Math.round((top[1] / expense) * 100) : 0;
+      const advice = expense > income && income > 0
+        ? 'Pengeluaran lebih besar daripada pemasukan bulan ini. Coba tinjau kategori terbesar.'
+        : top && share >= 40
+          ? `${top[0]} mengambil sekitar ${share}% dari total pengeluaran. Ini bisa menjadi fokus penghematan.`
+          : 'Pola pengeluaranmu cukup tersebar. Pertahankan pencatatan rutin agar trennya semakin jelas.';
+      body.innerHTML = `<div class="confirm-card">
+        <div class="confirm-type shopping">Wawasan otomatis</div>
+        <div class="confirm-name">${top ? `Kategori terbesar: ${escapeHtml(top[0])}` : 'Belum ada pengeluaran'}</div>
+        ${top ? `<div class="confirm-amount">${formatRupiah(top[1])}</div><div class="confirm-detail">${share}% dari pengeluaran bulan ini</div>` : ''}
+        <div class="confirm-category">${escapeHtml(advice)}</div>
+      </div>
+      <div class="recap-block"><div class="recap-row"><span class="label">Pemasukan</span><span class="value in">${formatRupiah(income)}</span></div><div class="recap-row"><span class="label">Pengeluaran</span><span class="value out">${formatRupiah(expense)}</span></div></div>`;
+    }
+    actions.innerHTML = `<button class="btn btn-primary btn-block" onclick="closeConfirm()">Mengerti</button>`;
+    openModal('confirmModal');
+  },
+
   showUnpurchased() {
     closeVoiceModal();
     // cari shopping list aktif (yang punya item belum selesai)
@@ -1768,6 +2488,7 @@ const Intent = {
       body.innerHTML = `<div class="empty-state"><div class="emoji">✨</div><div class="msg">Semua belanjaan sudah lengkap</div></div>`;
       actions.innerHTML = `<button class="btn btn-primary btn-block" onclick="closeConfirm()">Oke</button>`;
       openModal('confirmModal');
+      TTS.speak('Semua barang di daftar belanja sudah selesai.', 'id');
       return;
     }
 
@@ -1785,6 +2506,8 @@ const Intent = {
     body.innerHTML = html;
     actions.innerHTML = `<button class="btn btn-primary btn-block" onclick="closeConfirm()">Oke</button>`;
     openModal('confirmModal');
+    const spokenItems = activeLists.flatMap(sl => sl.items.filter(i => !i.done).map(i => `${i.name}${i.qty ? ` ${i.qty} ${i.unit || ''}` : ''}`));
+    TTS.speak(`Daftar belanja yang belum selesai: ${spokenItems.join(', ')}.`, 'id');
   },
 
   askClarification(text) {
@@ -1842,6 +2565,48 @@ function handleFollowUp(text, pending) {
 }
 
 /* ============ 6. SAVE ACTIONS ============ */
+function saveBatch() {
+  const items = Intent.pendingBatch;
+  if (!items || items.length === 0) return;
+  for (const p of items) {
+    if (!p.name || !p.amount) continue;
+    const tx = {
+      id: uid(),
+      date: new Date().toISOString(),
+      type: p.intent === 'create_income' ? 'income' : 'expense',
+      name: p.name,
+      qty: p.qty || null,
+      unit: p.unit || null,
+      amount: p.amount,
+      category: p.category,
+      source: 'voice',
+      createdAt: new Date().toISOString()
+    };
+    state.transactions.unshift(tx);
+    if (p.intent === 'create_expense') shoppingFollowUpReadyAt = Date.now() + 120000;
+    tryAutoCheckShopping(p.name);
+  }
+  Intent.pendingBatch = null;
+  DB.save(state);
+  closeConfirm();
+  showToast(`${items.length} transaksi berhasil dicatat ✓`);
+  renderAll();
+}
+
+function removeBatchItem(idx) {
+  if (!Intent.pendingBatch) return;
+  Intent.pendingBatch.splice(idx, 1);
+  if (Intent.pendingBatch.length === 0) { closeConfirm(); return; }
+  if (Intent.pendingBatch.length === 1) {
+    // kalau tinggal satu, pindah ke single confirm
+    const only = Intent.pendingBatch[0];
+    Intent.pendingBatch = null;
+    Intent.showTransactionConfirm(only);
+    return;
+  }
+  Intent.showBatchConfirm(Intent.pendingBatch);
+}
+
 function saveTransaction() {
   const p = Intent.pendingResult;
   if (!p || !p.name || !p.amount) {
@@ -1861,6 +2626,7 @@ function saveTransaction() {
     createdAt: new Date().toISOString()
   };
   state.transactions.unshift(tx);
+  if (p.intent === 'create_expense') shoppingFollowUpReadyAt = Date.now() + 120000;
 
   // auto-check shopping list
   tryAutoCheckShopping(p.name);
@@ -1900,7 +2666,7 @@ function saveShoppingList() {
       qty: it.qty,
       unit: it.unit,
       done: false,
-      price: null
+      price: it.price || null
     }))
   };
   state.shoppingLists.unshift(sl);
@@ -1926,9 +2692,14 @@ function renderHome() {
     if (t.type === 'income') income += t.amount;
     else expense += t.amount;
   }
+  // pill di halaman beranda
   document.getElementById('sumIn').textContent = formatRupiah(income);
   document.getElementById('sumOut').textContent = formatRupiah(expense);
   document.getElementById('sumBalance').textContent = formatRupiah(income - expense);
+  // kartu di halaman ringkasan
+  document.getElementById('sumIn2').textContent = formatRupiah(income);
+  document.getElementById('sumOut2').textContent = formatRupiah(expense);
+  document.getElementById('sumBalance2').textContent = formatRupiah(income - expense);
 
   // greeting berdasarkan waktu
   const h = new Date().getHours();
@@ -2218,12 +2989,14 @@ function openVoiceModal(mode) {
   document.getElementById('voiceTranscript').textContent = '';
   Voice._followUp = null;
   Voice._mode = mode || null;
+  // langsung mulai rekam — user tidak perlu tap "Mulai" lagi
+  setTimeout(() => Voice.start(), 120);
 }
 function closeVoiceModal() {
   Voice.stop();
   closeModal('voiceModal');
 }
-function closeConfirm() { TTS.stop(); closeModal('confirmModal'); Intent.pendingResult = null; }
+function closeConfirm() { TTS.stop(); closeModal('confirmModal'); Intent.pendingResult = null; Intent.pendingBatch = null; }
 function toggleVoice() {
   if (Voice.listening) Voice.stop();
   else Voice.start();
