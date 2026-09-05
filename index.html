@@ -3324,10 +3324,48 @@ function closeConfirm() {
   TTS.stop();
   // batalkan auto-confirm suara kalau masih pending
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+  if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
+  if (Intent._confirmReminderTimeout) { clearTimeout(Intent._confirmReminderTimeout); Intent._confirmReminderTimeout = null; }
+  if (Intent._confirmCancelTimeout) { clearTimeout(Intent._confirmCancelTimeout); Intent._confirmCancelTimeout = null; }
+  if (Intent._activeConfirmRecognition) {
+    try { Intent._activeConfirmRecognition.stop(); } catch (e) {}
+    Intent._activeConfirmRecognition = null;
+  }
   Voice._confirmMode = false;
   closeModal('confirmModal');
   Intent.pendingResult = null;
   Intent.pendingBatch = null;
+}
+
+function armConfirmSilenceTimers() {
+  if (Intent._confirmReminderTimeout || Intent._confirmCancelTimeout) return;
+  // Beri waktu pengguna untuk menjawab, lalu ingatkan sekali.
+  Intent._confirmReminderTimeout = setTimeout(() => {
+    Intent._confirmReminderTimeout = null;
+    if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
+
+    // Hentikan sesi mic lama agar suara pengingat tidak dianggap sebagai jawaban.
+    Voice._confirmMode = false;
+    if (Intent._activeConfirmRecognition) {
+      try { Intent._activeConfirmRecognition.stop(); } catch (e) {}
+      Intent._activeConfirmRecognition = null;
+    }
+    TTS.speak('Apakah sudah benar?', 'id');
+    Intent._confirmCancelTimeout = setTimeout(() => {
+      Intent._confirmCancelTimeout = null;
+      if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
+
+      closeConfirm();
+      TTS.speak('Berhubung tidak ada jawaban, transaksi tadi saya hapus.', 'id');
+    }, 5000);
+
+    // Beri waktu TTS pengingat selesai sebelum mic dinyalakan lagi.
+    setTimeout(() => {
+      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+        confirmByVoice();
+      }
+    }, 1500);
+  }, 5000);
 }
 
 // Jalankan speakFn(), lalu setelah TTS benar-benar selesai, buka mic konfirmasi
@@ -3369,11 +3407,13 @@ function startConfirmAfterTTS(speakFn) {
 function confirmByVoice() {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
   if (!Voice.supported) return;
+  armConfirmSilenceTimers();
   // JANGAN stop TTS di sini — sudah selesai sendiri via onend
   Voice._confirmMode = true;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
   const r = new SR();
+  Intent._activeConfirmRecognition = r;
   r.lang = 'id-ID';
   r.continuous = false;
   r.interimResults = false;
@@ -3388,7 +3428,19 @@ function confirmByVoice() {
     Voice._confirmMode = false;
     if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
   };
-  r.onend = () => { Voice._confirmMode = false; };
+  r.onend = () => {
+    Voice._confirmMode = false;
+    if (Intent._activeConfirmRecognition === r) Intent._activeConfirmRecognition = null;
+    // Jangan biarkan popup kehilangan mikrofon hanya karena pengguna
+    // menunggu beberapa detik sebelum berkata "ya" atau "benar".
+    if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+      if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
+      Intent._confirmRestartTimeout = setTimeout(() => {
+        Intent._confirmRestartTimeout = null;
+        confirmByVoice();
+      }, 300);
+    }
+  };
   try { r.start(); } catch(e) {}
 }
 
