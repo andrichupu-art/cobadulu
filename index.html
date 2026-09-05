@@ -1155,10 +1155,41 @@ function aiIsTransientStatus(status, detail) {
 }
 const AI_PARSER_PROMPT_SCHEMA = `{"intent":"create_income|create_expense|create_shopping_list|create_note|query_today|query_week|query_month|query_income|query_expense|query_balance|query_shopping|query_unpurchased|query_insight|query_unit_price|query_last_purchase|unknown","name":null,"amount":null,"qty":null,"unit":null,"category":null,"items":[],"content":null}`;
 function buildAIParserPrompt(text) {
-  return `Kamu adalah parser transaksi keuangan berbahasa Indonesia. Ubah kalimat pengguna menjadi JSON saja, tanpa markdown.
-Skema JSON:
+  return `Kamu adalah parser transaksi keuangan dan belanja berbahasa Indonesia. Input berasal dari TRANSKRIPSI SUARA (speech-to-text) sehingga sering ada salah ucap atau salah tulis — kamu HARUS mengoreksinya terlebih dahulu sebelum mem-parse.
+
+LANGKAH WAJIB — KOREKSI TRANSKRIPSI SUARA DULU:
+- Konteksnya adalah PENCATATAN KEUANGAN / DAFTAR BELANJA, bukan pembicaraan umum.
+- Koreksi kata yang salah dikenali STT ke kata barang/bahan yang masuk akal dalam konteks belanja/pasar:
+  Contoh koreksi:
+  • "tahun" → "tahu" (makanan, bukan tahun kalender)
+  • "tema" atau "tempe" bisa jadi "tempe"
+  • "bawangan" → "bawang"
+  • "cabe" / "cabe merah" / "cabai" → tetap "cabai"
+  • "terikasi" atau serupa → "terasi"
+  • "sayuran" bisa jadi nama barang "sayur"
+  • Kata dengan angka di belakang (mis. "tahu 2 kg") → "tahu" adalah barang, "2 kg" adalah qty+unit
+  • Jika ada kata yang terdengar mirip nama bahan makanan / barang sehari-hari, pilih interpretasi itu
+- Jika ada kata yang ambigu (bisa nama barang ATAU kata lain), selalu pilih interpretasi BARANG/BAHAN MAKANAN dalam konteks transaksi/belanja.
+
+Skema JSON output (tanpa markdown):
 ${AI_PARSER_PROMPT_SCHEMA}
-Aturan: amount harus angka rupiah tanpa titik; qty harus angka; gunakan null jika tidak ada. Kategori harus salah satu dari: Makanan, Belanja bahan, Tagihan, Transportasi, Kesehatan, Pendidikan, Tempat usaha, Gaji, Penjualan, Hiburan, Rumah tangga, Lainnya. Untuk daftar belanja, items berisi objek {"name":string,"qty":number|null,"unit":string|null}. Kalimat pengguna: ${text}`;
+
+Aturan output:
+- amount: angka rupiah tanpa titik/koma pemisah, null jika tidak ada
+- qty: angka saja, null jika tidak ada
+- unit: satuan seperti "kg", "gram", "liter", "bungkus", "ikat", dll; null jika tidak ada
+- name: nama barang/item yang sudah DIKOREKSI (bukan kata asli transkripsi jika salah)
+- Kategori harus salah satu dari: Makanan, Belanja bahan, Tagihan, Transportasi, Kesehatan, Pendidikan, Tempat usaha, Gaji, Penjualan, Hiburan, Rumah tangga, Lainnya
+- Untuk daftar belanja, items berisi objek {"name":string,"qty":number|null,"unit":string|null}
+- Respond HANYA dengan JSON, tanpa penjelasan apapun
+
+Contoh:
+Input: "tahu 2 kg Rp 20.000" → {"intent":"create_expense","name":"tahu","amount":20000,"qty":2,"unit":"kg","category":"Belanja bahan","items":[]}
+Input: "tahun 2 kg 20 ribu" → KOREKSI "tahun"→"tahu" → {"intent":"create_expense","name":"tahu","amount":20000,"qty":2,"unit":"kg","category":"Belanja bahan","items":[]}
+Input: "beli bawang 1 kilo 15 ribu" → {"intent":"create_expense","name":"bawang","amount":15000,"qty":1,"unit":"kg","category":"Belanja bahan","items":[]}
+Input: "daftar belanja tahu tempe cabai" → {"intent":"create_shopping_list","name":null,"amount":null,"qty":null,"unit":null,"category":null,"items":[{"name":"tahu","qty":null,"unit":null},{"name":"tempe","qty":null,"unit":null},{"name":"cabai","qty":null,"unit":null}]}
+
+Kalimat pengguna (dari transkripsi suara): ${text}`;
 }
 function normalizeAIResult(value, raw) {
   const allowed = new Set(['create_income','create_expense','create_shopping_list','create_note',
@@ -1244,6 +1275,7 @@ const GeminiAI = {
     const prompt = buildAIParserPrompt(text);
 
     const buildBody = (model) => JSON.stringify({
+      system_instruction: { parts: [{ text: 'Kamu adalah parser transaksi keuangan. Input berasal dari transkripsi suara yang sering salah. SELALU koreksi kata yang salah ke nama barang/bahan yang paling masuk akal dalam konteks belanja/pasar Indonesia. Contoh: "tahun" → "tahu", "tema" → "tempe". Respond HANYA dengan JSON valid, tanpa teks lain.' }] },
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0,
@@ -1375,7 +1407,10 @@ const GroqAI = {
     for (const model of models) {
       const body = JSON.stringify({
         model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: 'Kamu adalah parser transaksi keuangan. Input berasal dari transkripsi suara yang sering salah. SELALU koreksi kata yang salah ke nama barang/bahan yang paling masuk akal dalam konteks belanja/pasar Indonesia. Contoh: "tahun" → "tahu", "tema" → "tempe". Respond HANYA dengan JSON valid, tanpa teks lain.' },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0,
         max_tokens: 1024,
         response_format: { type: 'json_object' }
