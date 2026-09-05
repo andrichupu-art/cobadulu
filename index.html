@@ -2597,8 +2597,7 @@ const Intent = {
     }
     body.innerHTML = html;
 
-    // Tidak ada tombol — flow sepenuhnya suara
-    // Mic akan terbuka otomatis di startConfirmAfterTTS atau untuk lengkapi data
+    // Tidak ada tombol — flow sepenuhnya suara.
     actions.innerHTML = '';
 
     this.pendingResult = parsed;
@@ -2644,7 +2643,7 @@ const Intent = {
         </div>`;
     });
     body.innerHTML = html;
-    // Tidak ada tombol — flow sepenuhnya suara
+    // Tidak ada tombol — flow sepenuhnya suara.
     actions.innerHTML = '';
     this.pendingBatch = items;
     openModal('confirmModal');
@@ -2680,7 +2679,7 @@ const Intent = {
     html += `</div>`;
     body.innerHTML = html;
 
-    // Tidak ada tombol — flow sepenuhnya suara
+    // Tidak ada tombol — flow sepenuhnya suara.
     actions.innerHTML = '';
     this.pendingResult = parsed;
     openModal('confirmModal');
@@ -3578,6 +3577,17 @@ function armConfirmSilenceTimers() {
   }, 5000);
 }
 
+function scheduleConfirmRestart(delay = 100) {
+  if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
+  if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
+  Intent._confirmRestartTimeout = setTimeout(() => {
+    Intent._confirmRestartTimeout = null;
+    if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+      confirmByVoice();
+    }
+  }, delay);
+}
+
 // Jalankan speakFn(), lalu setelah TTS benar-benar selesai, buka mic konfirmasi
 function startConfirmAfterTTS(speakFn, afterTTS) {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
@@ -3684,13 +3694,7 @@ function confirmByVoice() {
 
     // Restart mic selama modal masih aktif dan pending masih ada
     if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
-      if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
-      Intent._confirmRestartTimeout = setTimeout(() => {
-        Intent._confirmRestartTimeout = null;
-        if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
-          confirmByVoice();
-        }
-      }, 100);
+      scheduleConfirmRestart(100);
     }
   };
 
@@ -3702,13 +3706,7 @@ function confirmByVoice() {
     if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
     // Restart otomatis kecuali error permanen
     if (e.error !== 'not-allowed' && e.error !== 'service-not-allowed') {
-      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
-        setTimeout(() => {
-          if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
-            confirmByVoice();
-          }
-        }, 200);
-      }
+      scheduleConfirmRestart(200);
     }
   };
 
