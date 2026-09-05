@@ -32,8 +32,29 @@
     margin: 0 auto;
     min-height: 100vh;
     background: #f7f8fa;
+    background-image: url('./bg-market.png');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
     position: relative;
     padding-bottom: 80px;
+  }
+  #app::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(247, 248, 250, 0.62);
+    pointer-events: none;
+    z-index: 0;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  #app > * {
+    position: relative;
+    z-index: 1;
   }
 
   /* ============ HEADER ============ */
@@ -2881,12 +2902,7 @@ const Intent = {
         this.showUnpurchased();
         break;
     default:
-        if (this._teachRetryText === rawText) {
-          this._teachRetryText = null;
-          this.showTeachRetryFailure(rawText);
-        } else {
-          this.askClarification(rawText);
-        }
+        this.askClarification(rawText);
     }
   },
 
@@ -3231,11 +3247,10 @@ const Intent = {
 
   askClarification(text) {
     closeVoiceModal();
-    this._lastUnknownText = text;
     const body = document.getElementById('confirmBody');
     const actions = document.getElementById('confirmActions');
     document.getElementById('confirmTitle').textContent = 'Saya kurang paham';
-    document.getElementById('confirmSub').textContent = 'Coba katakan dengan cara lain, atau ajari saya';
+    document.getElementById('confirmSub').textContent = 'Coba katakan dengan cara lain';
     body.innerHTML = `
       <div class="confirm-card">
         <div style="font-size:13px; color:#6b7280; margin-bottom:8px;">Kamu bilang:</div>
@@ -3247,72 +3262,9 @@ const Intent = {
     `;
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="closeConfirm()">Tutup</button>
-      <button class="btn btn-secondary" onclick="Intent.openTeachForm()">📖 Ajari Saya</button>
       <button class="btn btn-primary" onclick="closeConfirm(); openVoiceModal();">Coba Lagi</button>
     `;
     openModal('confirmModal');
-  },
-
-  showTeachRetryFailure(text) {
-    closeVoiceModal();
-    this._lastUnknownText = text;
-    const body = document.getElementById('confirmBody');
-    const actions = document.getElementById('confirmActions');
-    document.getElementById('confirmTitle').textContent = 'Belum berhasil mengenali';
-    document.getElementById('confirmSub').textContent = 'Istilah sudah disimpan, tetapi kalimatnya masih belum cocok.';
-    body.innerHTML = `<div class="confirm-card"><div class="confirm-detail">Ucapan tadi:</div><div class="confirm-name" style="margin-top:8px;">"${escapeHtml(text)}"</div><div class="confirm-detail" style="margin-top:12px;">Coba ajari dengan istilah yang lebih pendek atau gunakan contoh transaksi yang tersedia.</div></div>`;
-    actions.innerHTML = `<button class="btn btn-secondary" onclick="closeConfirm()">Tutup</button><button class="btn btn-primary" onclick="Intent.openTeachForm()">Ajari Ulang</button>`;
-    openModal('confirmModal');
-  },
-
-  // ── AJARI SAYA: form untuk menjelaskan maksud ucapan yang tidak dikenali ──
-  openTeachForm() {
-    const text = this._lastUnknownText || '';
-    const body = document.getElementById('confirmBody');
-    const actions = document.getElementById('confirmActions');
-    document.getElementById('confirmTitle').textContent = 'Ajari Saya';
-    document.getElementById('confirmSub').textContent = 'Istilah ini otomatis dikenali di kalimat apa pun berikutnya';
-    body.innerHTML = `
-      <div class="confirm-card" style="text-align:left;">
-        <div style="font-size:13px; color:#6b7280; margin-bottom:10px;">Ucapan: <i>"${escapeHtml(text)}"</i></div>
-        <div class="form-group">
-          <label class="form-label">Kata / istilah yang tidak dikenali</label>
-          <input type="text" id="teachTerm" class="form-input" placeholder="Contoh: gocap" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ganti dengan kata baku</label>
-          <input type="text" id="teachReplacement" class="form-input" placeholder="Contoh: lima puluh ribu" />
-        </div>
-        <div style="font-size:12px; color:#9ca3af; line-height:1.6;">
-          Contoh lain: "cepek" → "seratus ribu", "bombe" → "bombay", "sak karung" → "1 karung"
-        </div>
-      </div>
-    `;
-    actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
-      <button id="teachSaveBtn" class="btn btn-primary" onclick="Intent.saveTeach()">Simpan & Coba Lagi</button>
-    `;
-    openModal('confirmModal');
-  },
-
-  async saveTeach() {
-    const text = this._lastUnknownText || '';
-    const termInput = document.getElementById('teachTerm');
-    const replacementInput = document.getElementById('teachReplacement');
-    const term = termInput ? termInput.value.trim() : '';
-    const replacement = replacementInput ? replacementInput.value.trim() : '';
-    if (!term || !replacement) { showToast('Isi istilah dan penggantinya dulu ya'); return; }
-    const saveButton = document.getElementById('teachSaveBtn');
-    if (saveButton) {
-      saveButton.disabled = true;
-      saveButton.textContent = 'Menyimpan...';
-    }
-    await Glossary.save(term, replacement);
-    this._teachRetryText = text;
-    closeConfirm();
-    showToast('Diingat ✓ — mencoba lagi...');
-    await this.handle(text);
-    this._teachRetryText = null;
   },
 
   askMissingWithVoice() {
