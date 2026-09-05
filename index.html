@@ -9,6 +9,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-192.svg" />
+<!-- Supabase Integration for Glossary System -->
+<script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0"></script>
+<script>
+  const SUPABASE_CONFIG = {
+    url: 'https://wycodpzildimadpxnkzt.supabase.co',  // GANTI INI dengan project URL
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5Y29kcHppbGRpbWFkcHhua3p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODY1NTcsImV4cCI6MjEwNDE2MjU1N30.hdohU1CWDZtnIYv61Z4LAJaWcR6A9XrJtGECQIBz6do'                        // GANTI INI dengan anon key
+  };
+</script>
 <title>Catat Aja — Buku Catatan Keuangan yang Bisa Diajak Bicara</title>
 <style>
   /* ============ RESET & BASE ============ */
@@ -924,8 +932,8 @@
     <button class="nav-item" data-page="shopping" onclick="goTo('shopping')">
       <span class="nav-icon">🛒</span>Belanja
     </button>
-    <button class="nav-item" data-page="settings" onclick="goTo('settings')">
-      <span class="nav-icon">⚙️</span>Lainnya
+    <button class="nav-item" data-page="glossary" onclick="goTo('glossary'); loadGlossaryUI();">
+      <span class="nav-icon">📚</span>Pelajaran
     </button>
   </nav>
 </div>
@@ -3343,5 +3351,145 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   }
 </script>
+
+<!-- ========== GLOSSARY SYSTEM: LEARN TERM MODAL ========== -->
+<div id="learnTermModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-header">
+      <h2>Apa itu "<span id="learnTermText"></span>"?</h2>
+      <button onclick="closeModal('learnTermModal')" class="close-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px;">Saya tidak kenal istilah ini. Bantu saya belajar? 😊</p>
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Kategori</label>
+        <select id="learnTermCategory" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;">
+          <option value="pemasukan">💰 Pemasukan</option>
+          <option value="pengeluaran">💸 Pengeluaran</option>
+          <option value="merchant">🏪 Nama Toko</option>
+          <option value="person">👤 Nama Orang</option>
+          <option value="custom">❓ Lainnya</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="font-size: 12px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px;">Detail Tipe</label>
+        <select id="learnTermSubType" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"><option value="lainnya">Lainnya</option></select>
+      </div>
+    </div>
+    <div class="modal-footer" style="display: flex; gap: 8px;">
+      <button onclick="closeModal('learnTermModal')" style="flex: 1; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-weight: 500; cursor: pointer; font-size: 14px;">Batal</button>
+      <button id="learnTermSaveBtn" style="flex: 1; padding: 10px 16px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;">Simpan ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== GLOSSARY AUTH MODAL ========== -->
+<div id="authModal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 380px;">
+    <div class="modal-header">
+      <h2>🔐 Login untuk Sinkronisasi</h2>
+      <button onclick="closeModal('authModal')" class="close-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="color: #6b7280; font-size: 13px; margin-bottom: 16px;">Sinkronisasi memori ke semua perangkat.</p>
+      <div style="margin-bottom: 14px;">
+        <input id="authEmail" type="email" placeholder="Email" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"/>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <input id="authPassword" type="password" placeholder="Password" style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; font-family: inherit;"/>
+      </div>
+    </div>
+    <div class="modal-footer" style="display: flex; gap: 8px; flex-direction: column;">
+      <button id="authSignInBtn" style="width: 100%; padding: 10px 16px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px;">Login</button>
+      <button id="authSignUpBtn" style="width: 100%; padding: 10px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-weight: 600; cursor: pointer; font-size: 14px;">Buat Akun</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== GLOSSARY PAGE ========== -->
+<div id="page-glossary" class="page">
+  <div class="page-title">📚 Pelajaran Saya</div>
+  <div class="page-sub">Istilah yang sudah dipelajari</div>
+  <div style="margin-bottom: 16px;">
+    <button onclick="openModal('glossaryModal'); loadGlossaryUI()" style="width: 100%; padding: 12px 16px; background: #10b981; color: #fff; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer;">✏️ Kelola</button>
+  </div>
+  <div class="summary-grid">
+    <div class="summary-item"><div class="label">Total</div><div class="value" id="glossaryCount">0</div></div>
+    <div class="summary-item"><div class="label">Belum Diketahui</div><div class="value" id="unknownCount">0</div></div>
+  </div>
+  <div style="margin-top: 20px;">
+    <div class="page-sub">Sinkronisasi Cloud</div>
+    <div id="authStatus" style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: #166534;">⏳ Mengecek...</div>
+    <button id="authToggleBtn" style="width: 100%; padding: 10px 16px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; color: #374151;">🔐 Login</button>
+  </div>
+</div>
+
+<!-- ========== GLOSSARY MODULE ========== -->
+<script src="./catat-aja-glossary-module.js"></script>
+
+<script>
+// Glossary Integration
+const origIntentHandle = Intent.handle.bind(Intent);
+Intent.handle = async function(transcript) {
+  if (typeof window.Memory !== 'undefined' && typeof window.IntentHandleWithMemory === 'function') {
+    await IntentHandleWithMemory(transcript);
+  } else {
+    origIntentHandle(transcript);
+  }
+};
+
+async function loadGlossaryUI() {
+  if (typeof Memory === 'undefined') return;
+  const glossaryList = document.getElementById('glossaryList');
+  glossaryList.innerHTML = '';
+  const terms = Object.values(Memory.glossary || {});
+  if (terms.length === 0) {
+    glossaryList.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 20px 0;">Belum ada istilah</p>';
+  } else {
+    terms.forEach(term => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;';
+      card.innerHTML = `<div><div style="font-weight: 600; font-size: 14px; color: #111827;">${term.term}</div><div style="font-size: 12px; color: #6b7280;">${term.category}</div></div><button onclick="Memory.forget('${term.term}'); loadGlossaryUI()" style="background: #fee2e2; color: #991b1b; border: none; border-radius: 4px; padding: 4px 8px; font-size: 12px; cursor: pointer;">Hapus</button>`;
+      glossaryList.appendChild(card);
+    });
+  }
+  document.getElementById('glossaryCount').textContent = terms.length;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const authToggleBtn = document.getElementById('authToggleBtn');
+  const authStatus = document.getElementById('authStatus');
+  function updateAuthUI() {
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      authStatus.innerHTML = `✅ Login as <strong>${currentUser.email}</strong>`;
+      authToggleBtn.textContent = '🚪 Logout';
+      authToggleBtn.onclick = signOutUser;
+    } else {
+      authStatus.innerHTML = '⚠️ Belum login';
+      authToggleBtn.textContent = '🔐 Login';
+      authToggleBtn.onclick = () => openModal('authModal');
+    }
+  }
+  updateAuthUI();
+  document.getElementById('authSignInBtn').onclick = async () => {
+    if (typeof signInUser !== 'undefined') {
+      if (await signInUser(document.getElementById('authEmail').value, document.getElementById('authPassword').value)) {
+        closeModal('authModal');
+        updateAuthUI();
+        loadGlossaryUI();
+      }
+    }
+  };
+  document.getElementById('authSignUpBtn').onclick = async () => {
+    if (typeof signUpUser !== 'undefined') {
+      if (await signUpUser(document.getElementById('authEmail').value, document.getElementById('authPassword').value)) {
+        closeModal('authModal');
+        updateAuthUI();
+      }
+    }
+  };
+});
+</script>
+
 </body>
 </html>
