@@ -615,6 +615,36 @@
   .voice-btn, .voice-modal-center .big-mic, .login-logo .logo-circle {
     background: var(--color-primary);
   }
+  .voice-visualizer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 42px;
+    width: 64px;
+  }
+  .voice-visualizer span {
+    display: block;
+    width: 7px;
+    height: 15px;
+    border-radius: 99px;
+    background: currentColor;
+    transform-origin: center;
+  }
+  .voice-modal-center .big-mic .voice-visualizer { height: 48px; width: 72px; }
+  .voice-modal-center .big-mic .voice-visualizer span { width: 8px; height: 18px; }
+  .voice-btn.listening .voice-visualizer span,
+  .big-mic.listening .voice-visualizer span {
+    animation: voiceBars 0.9s ease-in-out infinite;
+  }
+  .voice-visualizer span:nth-child(2) { animation-delay: -0.2s; }
+  .voice-visualizer span:nth-child(3) { animation-delay: -0.4s; }
+  .voice-visualizer span:nth-child(4) { animation-delay: -0.6s; }
+  .voice-visualizer span:nth-child(5) { animation-delay: -0.8s; }
+  @keyframes voiceBars {
+    0%, 100% { transform: scaleY(0.55); opacity: 0.72; }
+    50% { transform: scaleY(1.7); opacity: 1; }
+  }
   .voice-btn:hover { background: var(--color-primary-strong); transform: scale(1.025); }
   .voice-btn:active { transform: scale(0.97); }
   .home-mic-ring { background: rgba(4, 120, 87, 0.1); }
@@ -646,6 +676,9 @@
   .nav-item:hover, .nav-item.active { color: var(--color-primary); }
   .nav-item.active { font-weight: 600; }
   .nav-item .nav-icon { line-height: 1; }
+  .nav-item .voice-visualizer { width: 28px; height: 22px; gap: 2px; }
+  .nav-item .voice-visualizer span { width: 3px; height: 9px; }
+  .login-logo .voice-visualizer { color: #ffffff; }
 
   .modal-overlay { background: rgba(15, 23, 42, 0.62); }
   .modal { border-radius: 24px 24px 0 0; }
@@ -682,7 +715,7 @@
 <div id="loginScreen" class="login-wrap">
   <div class="login-card">
     <div class="login-logo">
-      <div class="logo-circle">🎙️</div>
+      <div class="logo-circle"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></div>
       <h2>Catat Aja</h2>
       <p>Catat keuangan cukup dengan berbicara</p>
     </div>
@@ -713,7 +746,7 @@
   <section class="page active" id="page-home">
     <div class="home-mic-wrap">
       <div class="home-mic-ring">
-        <button class="voice-btn" id="heroVoiceBtn" onclick="openVoiceModal()" aria-label="Mulai mencatat dengan suara">🎙️</button>
+        <button class="voice-btn" id="heroVoiceBtn" onclick="openVoiceModal()" aria-label="Mulai mencatat dengan suara"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></button>
       </div>
       <div class="home-hint">Bicara Sekarang</div>
       <div class="home-example">"Beli bawang 2 kilo 40 ribu"<br/>"Buat daftar belanja tahu, tempe"</div>
@@ -774,7 +807,7 @@
     </div>
 
     <div class="voice-hero" style="margin-top:18px;">
-      <button class="voice-btn" onclick="openVoiceModal()" aria-label="Catat transaksi dengan suara" style="width:90px;height:90px;font-size:36px;">🎙️</button>
+      <button class="voice-btn" onclick="openVoiceModal()" aria-label="Catat transaksi dengan suara" style="width:90px;height:90px;font-size:36px;"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></button>
       <div class="hint">Catat dengan Suara</div>
       <div class="example">Contoh: "Beli bawang 2 kilo 40 ribu"</div>
     </div>
@@ -879,7 +912,7 @@
   <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-page="home" onclick="goTo('home')">
-      <span class="nav-icon">🎙️</span>Suara
+      <span class="nav-icon"><span class="voice-visualizer" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span></span>Suara
     </button>
     <button class="nav-item" data-page="summary" onclick="goTo('summary')">
       <span class="nav-icon">🏠</span>Ringkasan
@@ -901,7 +934,7 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="voice-modal-center">
-      <div class="big-mic" id="voiceModalMic">🎙️</div>
+      <div class="big-mic" id="voiceModalMic" aria-hidden="true"><span class="voice-visualizer"><span></span><span></span><span></span><span></span><span></span></span></div>
       <div class="status" id="voiceStatus">Tekan mikrofon untuk mulai bicara</div>
       <div class="transcript" id="voiceTranscript"></div>
       <div class="mt-4" style="display:flex; gap:10px;">
@@ -957,13 +990,47 @@ const DB = {
       user: { name: '' },
       transactions: [],
       shoppingLists: [], // [{id, name, createdAt, items:[{id,name,qty,unit,done,price}]}]
-      notes: []
+      notes: [],
+      memory: { categoryByName: {}, unitByName: {}, preferences: { responseStyle: 'normal', ttsRate: 1.05 } }
     };
   }
 };
 let state = DB.load();
 let shoppingFollowUpReadyAt = 0;
 let shoppingCaptureMode = false;
+
+/* ============ MEMORY — PREFERENSI PENGGUNA ============ */
+const Memory = {
+  normalizeName(name) {
+    return String(name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  },
+  categoryFor(name) {
+    const key = this.normalizeName(name);
+    return key ? state.memory?.categoryByName?.[key] || null : null;
+  },
+  rememberTransaction(transaction) {
+    const key = this.normalizeName(transaction.name);
+    if (!key) return;
+    if (!state.memory) state.memory = { categoryByName: {}, unitByName: {} };
+    if (!state.memory.categoryByName) state.memory.categoryByName = {};
+    if (!state.memory.unitByName) state.memory.unitByName = {};
+    if (transaction.category) state.memory.categoryByName[key] = transaction.category;
+    if (transaction.unit) state.memory.unitByName[key] = transaction.unit;
+  },
+  preference(key, fallback) {
+    return state.memory?.preferences?.[key] ?? fallback;
+  },
+  setPreference(key, value) {
+    if (!state.memory) state.memory = { categoryByName: {}, unitByName: {}, preferences: {} };
+    if (!state.memory.preferences) state.memory.preferences = {};
+    state.memory.preferences[key] = value;
+    DB.save(state);
+  },
+  unitFor(name) {
+    const key = this.normalizeName(name);
+    return key ? state.memory?.unitByName?.[key] || null : null;
+  }
+};
 
 /* ============ AI — HELPER BERSAMA (GEMINI & GROQ) ============ */
 function aiSleep(ms) {
@@ -1443,7 +1510,7 @@ const TTS = {
     const utt = new SpeechSynthesisUtterance(text);
     const ttsLang = (this._cfg[this._lastLang] || this._cfg.id).ttsLang;
     utt.lang   = ttsLang;
-    utt.rate   = 1.05;
+    utt.rate   = Memory.preference('ttsRate', 1.05);
     utt.pitch  = 1.1;
     utt.volume = 1;
     const voices = window.speechSynthesis.getVoices();
@@ -1755,6 +1822,8 @@ const NLP = {
   },
 
   normalizeCategory(value, name, intent) {
+    const remembered = Memory.categoryFor(name);
+    if (remembered) return remembered;
     const aliases = {
       'makanan': 'Makanan', 'minuman': 'Makanan', 'kuliner': 'Makanan',
       'sembako': 'Belanja bahan', 'bahan makanan': 'Belanja bahan', 'groceries': 'Belanja bahan',
@@ -1774,6 +1843,8 @@ const NLP = {
   // auto kategori berbasis kata kunci untuk fallback tanpa AI
   guessCategory(name, intent) {
     const n = (name || '').toLowerCase();
+    const remembered = Memory.categoryFor(name);
+    if (remembered) return remembered;
     if (/kopi|teh|roti|nasi|lauk|makan|masak|sayur|daging|ayam|ikan|telur/.test(n)) return 'Makanan';
     if (/bawang|cabai|cabe|beras|minyak|gula|garam|tempe|tahu|bumbu|santan|merica|kecap|saos|sosis|bakso|mie|bihun/.test(n)) return 'Belanja bahan';
     if (/listrik|air|pdam|internet|wifi|tv|telepon|pulsa|data|langganan|netflix|spotify/.test(n)) return 'Tagihan';
@@ -1799,7 +1870,7 @@ const NLP = {
       result.amount = this.extractAmount(text);
       const q = this.extractQuantity(text);
       result.qty = q.qty;
-      result.unit = q.unit;
+      result.unit = q.unit || Memory.unitFor(result.name);
       result.category = this.guessCategory(result.name, intent);
     }
     else if (intent === 'create_shopping_list') {
@@ -2061,6 +2132,27 @@ const Intent = {
   async handle(text) {
     // cek "ulangi" dulu sebelum apapun — tidak perlu AI, langsung eksekusi
     const quickIntent = NLP.detectIntent(text);
+    const preferenceText = (text || '').toLowerCase().trim();
+    if (/\b(jawab|bicara|ngomong)\s+(lebih\s+)?singkat\b/.test(preferenceText)) {
+      Memory.setPreference('responseStyle', 'short');
+      TTS.speak('Baik, saya akan menjawab lebih singkat.', 'id');
+      return;
+    }
+    if (/\b(jawab|bicara|ngomong)\s+(lebih\s+)?(detail|panjang)\b/.test(preferenceText)) {
+      Memory.setPreference('responseStyle', 'detailed');
+      TTS.speak('Baik, saya akan menjawab lebih detail.', 'id');
+      return;
+    }
+    if (/\b(bicara|suara)\s+(lebih\s+)?pelan\b/.test(preferenceText)) {
+      Memory.setPreference('ttsRate', 0.85);
+      TTS.speak('Baik, saya akan berbicara lebih pelan.', 'id');
+      return;
+    }
+    if (/\b(bicara|suara)\s+(lebih\s+)?cepat\b/.test(preferenceText)) {
+      Memory.setPreference('ttsRate', 1.2);
+      TTS.speak('Baik, saya akan berbicara lebih cepat.', 'id');
+      return;
+    }
     if (quickIntent === 'repeat_last') {
       closeVoiceModal();
       TTS.repeat();
@@ -2301,7 +2393,7 @@ const Intent = {
     closeVoiceModal();
     shoppingCaptureMode = true;
     shoppingFollowUpReadyAt = Date.now() + 120000;
-    openVoiceModal();
+    openVoiceModal(null, { skipGreeting: true });
     const status = document.getElementById('voiceStatus');
     if (status) status.textContent = 'Sebutkan barang yang perlu dibeli...';
     TTS.speak('Sebutkan barang yang perlu dibeli.', 'id');
@@ -2583,6 +2675,7 @@ function saveBatch() {
       createdAt: new Date().toISOString()
     };
     state.transactions.unshift(tx);
+    Memory.rememberTransaction(tx);
     if (p.intent === 'create_expense') shoppingFollowUpReadyAt = Date.now() + 120000;
     tryAutoCheckShopping(p.name);
   }
@@ -2626,6 +2719,7 @@ function saveTransaction() {
     createdAt: new Date().toISOString()
   };
   state.transactions.unshift(tx);
+  Memory.rememberTransaction(tx);
   if (p.intent === 'create_expense') shoppingFollowUpReadyAt = Date.now() + 120000;
 
   // auto-check shopping list
@@ -2983,14 +3077,22 @@ function goTo(page) {
 /* ============ 10. MODAL ============ */
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function openVoiceModal(mode) {
+function openVoiceModal(mode, options = {}) {
   openModal('voiceModal');
   document.getElementById('voiceStatus').textContent = 'Tekan mikrofon untuk mulai bicara';
   document.getElementById('voiceTranscript').textContent = '';
   Voice._followUp = null;
   Voice._mode = mode || null;
-  // langsung mulai rekam — user tidak perlu tap "Mulai" lagi
-  setTimeout(() => Voice.start(), 120);
+  // Sapa pengguna terlebih dahulu, lalu mulai merekam setelah sapaan selesai.
+  if (!options.skipGreeting) {
+    const hour = new Date().getHours();
+    const greeting = hour < 11 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 19 ? 'Selamat sore' : 'Selamat malam';
+    const name = state.user.name ? `, ${state.user.name}` : '';
+    TTS.speak(`Halo, ${greeting}${name}.`, 'id');
+    setTimeout(() => Voice.start(), 1200);
+  } else {
+    setTimeout(() => Voice.start(), 120);
+  }
 }
 function closeVoiceModal() {
   Voice.stop();
