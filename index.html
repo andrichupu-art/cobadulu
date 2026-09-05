@@ -1030,8 +1030,11 @@ const Glossary = {
   async save(term, replacement) {
     const key = this.normalizeTerm(term);
     const value = String(replacement || '').trim();
-    if (!key || !value || !Auth.user) return;
+    if (!key || !value) return;
+    // Simpan ke cache lokal lebih dulu agar fitur tetap bekerja tanpa sesi
+    // Supabase; sinkronisasi server dilakukan bila pengguna sudah login.
     this.cache[key] = value;
+    if (!Auth.user) return;
     try {
       const { error } = await sb.from('glossary').upsert(
         { user_id: Auth.user.id, term: key, replacement: value },
@@ -2423,7 +2426,7 @@ const Intent = {
     // Konfirmasi tanpa sentuhan setelah aplikasi membacakan hasil.
     const voiceAnswer = (text || '').toLowerCase().trim();
     const confirmable = this.pendingBatch || (this.pendingResult && ['create_income', 'create_expense', 'create_shopping_list'].includes(this.pendingResult.intent));
-    if (confirmable && /^(ya|iya|oke|ok|benar|betul|simpan|lanjutkan|yes)\b/.test(voiceAnswer)) {
+    if (confirmable && /^(ya|iya|oke|ok|benar|betul|simpan|lanjutkan|yes|sudah\s+benar)\b/.test(voiceAnswer)) {
       if (this.pendingBatch) saveBatch();
       else if (this.pendingResult.intent === 'create_shopping_list') saveShoppingList();
       else saveTransaction();
@@ -2549,8 +2552,13 @@ const Intent = {
       case 'query_unpurchased':
         this.showUnpurchased();
         break;
-      default:
-        this.askClarification(rawText);
+    default:
+        if (this._teachRetryText === rawText) {
+          this._teachRetryText = null;
+          this.showTeachRetryFailure(rawText);
+        } else {
+          this.askClarification(rawText);
+        }
     }
   },
 
@@ -2922,6 +2930,18 @@ const Intent = {
     openModal('confirmModal');
   },
 
+  showTeachRetryFailure(text) {
+    closeVoiceModal();
+    this._lastUnknownText = text;
+    const body = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Belum berhasil mengenali';
+    document.getElementById('confirmSub').textContent = 'Istilah sudah disimpan, tetapi kalimatnya masih belum cocok.';
+    body.innerHTML = `<div class="confirm-card"><div class="confirm-detail">Ucapan tadi:</div><div class="confirm-name" style="margin-top:8px;">"${escapeHtml(text)}"</div><div class="confirm-detail" style="margin-top:12px;">Coba ajari dengan istilah yang lebih pendek atau gunakan contoh transaksi yang tersedia.</div></div>`;
+    actions.innerHTML = `<button class="btn btn-secondary" onclick="closeConfirm()">Tutup</button><button class="btn btn-primary" onclick="Intent.openTeachForm()">Ajari Ulang</button>`;
+    openModal('confirmModal');
+  },
+
   // ── AJARI SAYA: form untuk menjelaskan maksud ucapan yang tidak dikenali ──
   openTeachForm() {
     const text = this._lastUnknownText || '';
@@ -2947,20 +2967,29 @@ const Intent = {
     `;
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
-      <button class="btn btn-primary" onclick="Intent.saveTeach()">Simpan & Coba Lagi</button>
+      <button id="teachSaveBtn" class="btn btn-primary" onclick="Intent.saveTeach()">Simpan & Coba Lagi</button>
     `;
     openModal('confirmModal');
   },
 
-  saveTeach() {
+  async saveTeach() {
     const text = this._lastUnknownText || '';
-    const term = document.getElementById('teachTerm').value.trim();
-    const replacement = document.getElementById('teachReplacement').value.trim();
+    const termInput = document.getElementById('teachTerm');
+    const replacementInput = document.getElementById('teachReplacement');
+    const term = termInput ? termInput.value.trim() : '';
+    const replacement = replacementInput ? replacementInput.value.trim() : '';
     if (!term || !replacement) { showToast('Isi istilah dan penggantinya dulu ya'); return; }
-    Glossary.save(term, replacement);
+    const saveButton = document.getElementById('teachSaveBtn');
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = 'Menyimpan...';
+    }
+    await Glossary.save(term, replacement);
+    this._teachRetryText = text;
     closeConfirm();
     showToast('Diingat ✓ — mencoba lagi...');
-    this.handle(text);
+    await this.handle(text);
+    this._teachRetryText = null;
   },
 
   askMissingWithVoice() {
@@ -3616,6 +3645,14 @@ function confirmByVoice() {
     const heard = (finalText || interimText).toLowerCase().trim();
     if (heard) _confirmBuffer = heard;
 
+    // Jangan menunggu isFinal. Pada Chrome/Android, jawaban singkat seperti
+    // "ya" atau "benar" sering hanya dikirim sebagai interim lalu sesi mic
+    // langsung berakhir; simpan segera saat jawaban positif sudah terdengar.
+    if (/^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|sudah\s+benar|bener|yes|jadi|gas|go|proceed|next|continue|yak|ye|mantap|baik|gass|okee|lakuin|catat|rekam)\b/.test(heard)) {
+      handleConfirmVoice([heard]);
+      return;
+    }
+
     // Proses segera jika sudah isFinal
     if (finalText.trim()) {
       const alts = [finalText.toLowerCase().trim()];
@@ -3694,7 +3731,7 @@ function confirmByVoice() {
 function handleConfirmVoice(alts) {
   // Guard: jika tidak ada pending lagi (sudah diproses), abaikan
   if (!Intent.pendingResult && !Intent.pendingBatch) return;
-  const yes = /^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|bener|correct|yes|jadi|gas|go|proceed|next|continue|yak|ye|yep|mantap|baik|gass|okee|lakuin|catat|rekam)\b/;
+  const yes = /^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|sudah\s+benar|bener|correct|yes|jadi|gas|go|proceed|next|continue|yak|ye|yep|mantap|baik|gass|okee|lakuin|catat|rekam)\b/;
   const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus|jangan|wait|tunggu|hold)\b/;
   const matched = alts.find(a => yes.test(a));
   const rejected = alts.find(a => no.test(a));
