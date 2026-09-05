@@ -2309,6 +2309,12 @@ const Voice = {
     this.recognition.onend = () => {
       this.listening = false;
       this.updateUI();
+      if (this._discardNextResult) {
+        this._discardNextResult = false;
+        this.finalTranscript = '';
+        this.interimTranscript = '';
+        return;
+      }
       // kalau ada hasil, proses
       const full = (this.finalTranscript + ' ' + this.interimTranscript).trim();
       if (full) {
@@ -2327,6 +2333,7 @@ const Voice = {
       return;
     }
     try {
+      this._discardNextResult = false;
       this.recognition.start();
     } catch (e) {
       if (!this.listening) showToast('Mikrofon belum bisa dimulai. Izinkan akses mikrofon lalu coba lagi.');
@@ -3498,6 +3505,16 @@ function closeVoiceModal() {
   Voice.stop();
   closeModal('voiceModal');
 }
+
+function abortCurrentVoiceSession() {
+  Voice._discardNextResult = true;
+  Voice.finalTranscript = '';
+  Voice.interimTranscript = '';
+  if (Voice.recognition && Voice.listening) {
+    try { Voice.recognition.stop(); } catch (e) {}
+  }
+  Voice.listening = false;
+}
 function closeConfirm() {
   TTS.stop();
   // batalkan auto-confirm suara kalau masih pending
@@ -3551,6 +3568,12 @@ function restoreVoiceHandlers() {
   Voice.recognition.onend = () => {
     Voice.listening = false;
     Voice.updateUI();
+    if (Voice._discardNextResult) {
+      Voice._discardNextResult = false;
+      Voice.finalTranscript = '';
+      Voice.interimTranscript = '';
+      return;
+    }
     if (Date.now() < (Voice._ignoreRecognitionUntil || 0)) {
       Voice.finalTranscript = '';
       Voice.interimTranscript = '';
@@ -3653,7 +3676,14 @@ function startConfirmAfterTTS(speakFn, afterTTS) {
 function confirmByVoice() {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
   if (!Voice.supported || !Voice.recognition) return;
-  if (Voice.listening) return; // sudah aktif, tunggu onend
+  if (Voice.listening) {
+    // Sesi input sebelumnya kadang masih berstatus aktif ketika popup sudah
+    // muncul. Batalkan hasil lamanya, lalu mulai sesi konfirmasi baru.
+    if (Voice._confirmMode) return;
+    abortCurrentVoiceSession();
+    setTimeout(confirmByVoice, 150);
+    return;
+  }
   armConfirmSilenceTimers();
   Voice._confirmMode = true;
   Intent._activeConfirmRecognition = Voice.recognition;
