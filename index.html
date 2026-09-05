@@ -3486,6 +3486,7 @@ function closeConfirm() {
 // Kembalikan onresult/onend/onerror Voice.recognition ke handler normal (non-confirm)
 function restoreVoiceHandlers() {
   if (!Voice.recognition) return;
+  Voice.recognition.continuous = false;
   Voice.recognition.maxAlternatives = 1;
   Voice.recognition.interimResults = true;
   Voice.recognition.onresult = (e) => {
@@ -3526,34 +3527,37 @@ function armConfirmSilenceTimers() {
 
     // Hentikan sesi mic lama agar suara pengingat tidak dianggap sebagai jawaban.
     Voice._confirmMode = false;
-    if (Intent._activeConfirmRecognition) {
-      try { Intent._activeConfirmRecognition.stop(); } catch (e) {}
-      Intent._activeConfirmRecognition = null;
+    // Null-kan dulu sebelum stop(). Event onend yang menyusul tidak boleh
+    // menjadwalkan restart mic di tengah suara pengingat.
+    const activeRecognition = Intent._activeConfirmRecognition;
+    Intent._activeConfirmRecognition = null;
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch (e) {}
     }
-    TTS.speak('Apakah sudah benar?', 'id');
-    Intent._confirmCancelTimeout = setTimeout(() => {
-      Intent._confirmCancelTimeout = null;
-      if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
 
-      closeConfirm();
-      TTS.speak('Berhubung tidak ada jawaban, transaksi tadi saya hapus.', 'id');
-    }, 5000);
+    // Tunggu TTS pengingat benar-benar selesai, baru buka mic lagi dan mulai
+    // hitung waktu untuk pembatalan otomatis.
+    startConfirmAfterTTS(() => TTS.speak('Apakah sudah benar?', 'id'), () => {
+      Intent._confirmCancelTimeout = setTimeout(() => {
+        Intent._confirmCancelTimeout = null;
+        if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
 
-    // Beri waktu TTS pengingat selesai sebelum mic dinyalakan lagi.
-    setTimeout(() => {
-      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
-        confirmByVoice();
-      }
-    }, 1500);
+        closeConfirm();
+        TTS.speak('Berhubung tidak ada jawaban, transaksi tadi saya hapus.', 'id');
+      }, 5000);
+    });
   }, 5000);
 }
 
 // Jalankan speakFn(), lalu setelah TTS benar-benar selesai, buka mic konfirmasi
-function startConfirmAfterTTS(speakFn) {
+function startConfirmAfterTTS(speakFn, afterTTS) {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
   if (!window.speechSynthesis) {
     speakFn();
-    setTimeout(confirmByVoice, 500);
+    setTimeout(() => {
+      if (afterTTS) afterTTS();
+      confirmByVoice();
+    }, 500);
     return;
   }
   // Pasang listener onend SEBELUM speak agar tidak terlewat
@@ -3570,7 +3574,10 @@ function startConfirmAfterTTS(speakFn) {
         if (prevOnEnd) prevOnEnd(e);
         window.speechSynthesis.speak = origSpeak; // restore
         // kecil jeda agar mic tidak langsung tangkap echo
-        setTimeout(confirmByVoice, 400);
+        setTimeout(() => {
+          if (afterTTS) afterTTS();
+          confirmByVoice();
+        }, 400);
       };
     }
     origSpeak(u);
@@ -3579,6 +3586,7 @@ function startConfirmAfterTTS(speakFn) {
   // Fallback: kalau TTS tidak mendukung onend (beberapa browser), pakai setTimeout panjang
   Intent._confirmVoiceTimeout = setTimeout(() => {
     window.speechSynthesis.speak = origSpeak; // restore kalau belum
+    if (afterTTS) afterTTS();
     confirmByVoice();
   }, 8000);
 }
@@ -3645,7 +3653,7 @@ function confirmByVoice() {
         if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
           confirmByVoice();
         }
-      }, 300);
+      }, 100);
     }
   };
 
@@ -3662,12 +3670,16 @@ function confirmByVoice() {
           if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
             confirmByVoice();
           }
-        }, 500);
+        }, 200);
       }
     }
   };
 
   try {
+    // Pertahankan satu sesi konfirmasi kontinu. Browser masih dapat
+    // mengakhiri sesi saat hening, tetapi onend di atas akan menyambungnya
+    // kembali tanpa menunggu pengguna menekan tombol.
+    Voice.recognition.continuous = true;
     Voice.recognition.maxAlternatives = 3;
     Voice.recognition.interimResults = true; // aktifkan interim agar buffer terisi
     Voice.recognition.start();
