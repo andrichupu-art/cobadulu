@@ -3020,6 +3020,7 @@ function saveBatch() {
   Intent.pendingBatch = null;
   DB.save(state);
   closeConfirm();
+  resetHomeVoiceUI();
   showToast(`${items.length} transaksi berhasil dicatat ✓`);
   renderAll();
 }
@@ -3072,6 +3073,9 @@ function saveTransaction() {
 }
 
 function resetHomeVoiceUI() {
+  // Reset transcript Voice agar updateUI tidak lagi menampilkan "Memproses..."
+  Voice.finalTranscript = '';
+  Voice.interimTranscript = '';
   const homeHint = document.getElementById('homeHint');
   const homeExample = document.getElementById('homeExample');
   const homeTranscript = document.getElementById('homeTranscript');
@@ -3569,14 +3573,20 @@ function confirmByVoice() {
   };
   r.onend = () => {
     Voice._confirmMode = false;
-    if (Intent._activeConfirmRecognition === r) Intent._activeConfirmRecognition = null;
+    // Jika recognition ini sudah tidak aktif (di-null oleh closeConfirm atau handleConfirmVoice),
+    // jangan restart — save sudah berjalan atau modal sudah ditutup.
+    if (Intent._activeConfirmRecognition !== r) return;
+    Intent._activeConfirmRecognition = null;
     // Jangan biarkan popup kehilangan mikrofon hanya karena pengguna
     // menunggu beberapa detik sebelum berkata "ya" atau "benar".
     if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
       if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
       Intent._confirmRestartTimeout = setTimeout(() => {
         Intent._confirmRestartTimeout = null;
-        confirmByVoice();
+        // Double-check: modal masih aktif sebelum restart mic
+        if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+          confirmByVoice();
+        }
       }, 300);
     }
   };
@@ -3589,6 +3599,9 @@ function handleConfirmVoice(alts) {
   const matched = alts.find(a => yes.test(a));
   const rejected = alts.find(a => no.test(a));
   if (matched) {
+    // Null-kan activeConfirmRecognition lebih dulu agar r.onend tidak restart mic
+    Intent._activeConfirmRecognition = null;
+    if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
     // konfirmasi diterima — simpan sesuai context
     if (Intent.pendingBatch) {
       saveBatch();
