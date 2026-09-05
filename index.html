@@ -2476,6 +2476,13 @@ const Intent = {
   // ── BATCH CONFIRM ─────────────────────────────────────────────
   showBatchConfirm(items) {
     closeVoiceModal();
+    // Hitung ulang nominal dari teks asli tiap item. Ini menjaga format
+    // Indonesia seperti "20.000" tetap menjadi 20000 pada mode batch,
+    // meskipun jalur AI/parser lain sempat mengembalikan angka qty ("2").
+    items = items.map(item => {
+      const rawAmount = NLP.extractAmount(item.raw || '');
+      return rawAmount ? { ...item, amount: rawAmount } : item;
+    });
     const isIncome = items[0].intent === 'create_income';
     const total = items.reduce((s, i) => s + (i.amount || 0), 0);
 
