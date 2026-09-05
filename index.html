@@ -1903,11 +1903,17 @@ const NLP = {
       const qty = parseFloat(m[1].replace(',', '.'));
       return { qty: isNaN(qty) ? null : qty, unit: units[m[2].toLowerCase()] || m[2] };
     }
-    // angka saja tanpa satuan
-    const digitMatch = t.match(/(\d+(?:[.,]\d+)?)/);
+    // angka saja tanpa satuan — HANYA jika tidak diikuti kata harga (ribu/rb/juta/jt)
+    // "5 ribu" adalah harga, bukan quantity
+    const digitMatch = t.match(/(\d+(?:[.,]\d+)?)\s*(?!(ribu|rb|juta|jt|ratus)\b)/);
     if (digitMatch) {
-      const qty = parseFloat(digitMatch[1].replace(',', '.'));
-      return { qty: isNaN(qty) ? null : qty, unit: null };
+      // pastikan angka ini tidak langsung diikuti kata harga
+      const afterDigit = t.slice(t.indexOf(digitMatch[1]) + digitMatch[1].length).trim();
+      const isPrice = /^(ribu|rb|juta|jt|ratus)\b/.test(afterDigit);
+      if (!isPrice) {
+        const qty = parseFloat(digitMatch[1].replace(',', '.'));
+        return { qty: isNaN(qty) ? null : qty, unit: null };
+      }
     }
     // angka kata: "dua kilo"
     for (const [word, val] of Object.entries(this.ones)) {
@@ -2204,13 +2210,15 @@ const NLP = {
       // kalau bagian dimulai dengan kata kerja (beli, jual...), strip dulu
       const cleaned = part.replace(/^(beli|belanja|bayar|jual)\s+/i, '').trim();
       const name = this.extractItemName(cleaned, baseIntent);
+      // ⭐ FIX: gunakan extractBatchAmount (bukan extractAmount) agar logika
+      // "ambil angka setelah satuan unit" tetap berlaku untuk tiap segmen.
+      // extractBatchAmount lebih cerdas: untuk "bawang 2 kilo 20 ribu",
+      // ia mengambil "20 ribu" (setelah "kilo"), bukan "2" (qty).
       let amount = this.extractBatchAmount(cleaned);
       const q = this.extractQuantity(cleaned);
-      
-      // ⭐ SAFETY: jika amount sangat kecil (< 100), kemungkinan parser salah tangkap quantity
-      // Coba extract ulang dengan lebih ketat
-      if (amount && amount < 100) {
-        // Cari angka yang lebih besar di kalimat
+
+      // ⭐ SAFETY: jika amount masih kecil (< 1000), coba cari angka >= 1000 di kalimat
+      if (!amount || amount < 1000) {
         const largerNumbers = [...cleaned.matchAll(/(\d+(?:[.,]\d{3})*)/g)]
           .map(m => {
             const normalized = m[1].replace(/\./g, '').replace(',', '');
@@ -2222,10 +2230,10 @@ const NLP = {
           amount = largerNumbers[0];
         }
       }
-      
+
       return {
         intent: baseIntent,
-        raw: part,
+        raw: cleaned, // ⭐ FIX: simpan cleaned (bukan part) agar re-ekstraksi di showBatchConfirm tidak keliru
         _lang: Lang.detect(text),
         name,
         amount,
@@ -2586,14 +2594,15 @@ const Intent = {
   // ── BATCH CONFIRM ─────────────────────────────────────────────
   showBatchConfirm(items) {
     closeVoiceModal();
-    // Hitung ulang nominal dari teks asli tiap item HANYA jika hasil re-ekstraksi
-    // >= 1000 (kemungkinan harga) DAN lebih besar dari nilai saat ini.
-    // Ini mencegah kasus qty kecil (mis. "2") tertangkap sebagai harga.
+    // Hitung ulang nominal dari teks asli tiap item HANYA jika amount saat ini
+    // tidak valid (< 1000 atau null). Jika amount sudah valid, JANGAN di-override
+    // karena extractBatchAmount sudah memprioritaskan "angka setelah unit satuan"
+    // dan re-ekstraksi dari raw (potongan kalimat) bisa mengembalikan nilai yang salah.
     items = items.map(item => {
-      const rawAmount = NLP.extractAmount(item.raw || '');
       const currentAmount = item.amount || 0;
-      const useRaw = rawAmount && rawAmount >= 1000 && rawAmount > currentAmount;
-      return useRaw ? { ...item, amount: rawAmount } : item;
+      if (currentAmount >= 1000) return item; // sudah valid, skip re-ekstraksi
+      const rawAmount = NLP.extractBatchAmount(item.raw || '');
+      return (rawAmount && rawAmount >= 1000) ? { ...item, amount: rawAmount } : item;
     });
     const isIncome = items[0].intent === 'create_income';
     const total = items.reduce((s, i) => s + (i.amount || 0), 0);
