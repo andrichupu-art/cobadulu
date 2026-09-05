@@ -3588,34 +3588,7 @@ function restoreVoiceHandlers() {
 }
 
 function armConfirmSilenceTimers() {
-  if (Intent._confirmReminderTimeout || Intent._confirmCancelTimeout) return;
-  // Beri waktu pengguna untuk menjawab, lalu ingatkan sekali.
-  Intent._confirmReminderTimeout = setTimeout(() => {
-    Intent._confirmReminderTimeout = null;
-    if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
-
-    // Hentikan sesi mic lama agar suara pengingat tidak dianggap sebagai jawaban.
-    Voice._confirmMode = false;
-    // Null-kan dulu sebelum stop(). Event onend yang menyusul tidak boleh
-    // menjadwalkan restart mic di tengah suara pengingat.
-    const activeRecognition = Intent._activeConfirmRecognition;
-    Intent._activeConfirmRecognition = null;
-    if (activeRecognition) {
-      try { activeRecognition.stop(); } catch (e) {}
-    }
-
-    // Tunggu TTS pengingat benar-benar selesai, baru buka mic lagi dan mulai
-    // hitung waktu untuk pembatalan otomatis.
-    startConfirmAfterTTS(() => TTS.speak('Apakah sudah benar?', 'id'), () => {
-      Intent._confirmCancelTimeout = setTimeout(() => {
-        Intent._confirmCancelTimeout = null;
-        if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
-
-        closeConfirm();
-        TTS.speak('Berhubung tidak ada jawaban, transaksi tadi saya hapus.', 'id');
-      }, 5000);
-    });
-  }, 5000);
+  // Konfirmasi hanya dilakukan sekali pada prompt awal.
 }
 
 function scheduleConfirmRestart(delay = 100) {
