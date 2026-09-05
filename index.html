@@ -3470,14 +3470,51 @@ function closeConfirm() {
   if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
   if (Intent._confirmReminderTimeout) { clearTimeout(Intent._confirmReminderTimeout); Intent._confirmReminderTimeout = null; }
   if (Intent._confirmCancelTimeout) { clearTimeout(Intent._confirmCancelTimeout); Intent._confirmCancelTimeout = null; }
-  if (Intent._activeConfirmRecognition) {
-    try { Intent._activeConfirmRecognition.stop(); } catch (e) {}
-    Intent._activeConfirmRecognition = null;
+  // Hentikan mic confirm dan null-kan dulu agar onend confirm tidak restart
+  Intent._activeConfirmRecognition = null;
+  if (Voice.listening) {
+    try { Voice.recognition && Voice.recognition.stop(); } catch (e) {}
   }
   Voice._confirmMode = false;
+  // Kembalikan handler Voice.recognition ke mode normal
+  restoreVoiceHandlers();
   closeModal('confirmModal');
   Intent.pendingResult = null;
   Intent.pendingBatch = null;
+}
+
+// Kembalikan onresult/onend/onerror Voice.recognition ke handler normal (non-confirm)
+function restoreVoiceHandlers() {
+  if (!Voice.recognition) return;
+  Voice.recognition.maxAlternatives = 1;
+  Voice.recognition.interimResults = true;
+  Voice.recognition.onresult = (e) => {
+    let interim = '', final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const tr = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += tr;
+      else interim += tr;
+    }
+    if (final) Voice.finalTranscript += final;
+    Voice.interimTranscript = interim;
+    Voice.updateUI();
+  };
+  Voice.recognition.onerror = (e) => {
+    Voice.listening = false;
+    Voice.updateUI();
+    if (e.error === 'no-speech') showToast('Suara belum terdengar. Coba lagi ya.');
+    else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') showToast('Izinkan akses mikrofon di browser.');
+    else showToast('Ups, ada gangguan. Coba lagi.');
+  };
+  Voice.recognition.onend = () => {
+    Voice.listening = false;
+    Voice.updateUI();
+    const full = (Voice.finalTranscript + ' ' + Voice.interimTranscript).trim();
+    if (full) {
+      if (Voice._followUp) setTimeout(() => handleFollowUp(full, Voice._followUp), 250);
+      else setTimeout(() => Intent.handle(full), 250);
+    }
+  };
 }
 
 function armConfirmSilenceTimers() {
@@ -3546,51 +3583,67 @@ function startConfirmAfterTTS(speakFn) {
   }, 8000);
 }
 
-// Mulai rekam suara konfirmasi — dipanggil otomatis setelah TTS selesai
+// Mulai rekam suara konfirmasi — pakai Voice.recognition yang sama (bukan instance baru)
+// agar tidak conflict di Chrome/Android yang hanya izinkan 1 SpeechRecognition aktif per tab.
 function confirmByVoice() {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
-  if (!Voice.supported) return;
+  if (!Voice.supported || !Voice.recognition) return;
+  if (Voice.listening) return; // sudah aktif, tunggu onend
   armConfirmSilenceTimers();
-  // JANGAN stop TTS di sini — sudah selesai sendiri via onend
   Voice._confirmMode = true;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) return;
-  const r = new SR();
-  Intent._activeConfirmRecognition = r;
-  r.lang = 'id-ID';
-  r.continuous = false;
-  r.interimResults = false;
-  r.maxAlternatives = 3;
+  Intent._activeConfirmRecognition = Voice.recognition;
   const sub = document.getElementById('confirmSub');
   if (sub) sub.textContent = '🎙️ Bilang "ya" untuk simpan, atau "tidak" untuk batal...';
-  r.onresult = (e) => {
-    const alts = [...e.results[0]].map(a => a.transcript.toLowerCase().trim());
-    handleConfirmVoice(alts);
+  // Override onresult sementara untuk mode konfirmasi
+  Voice.recognition.onresult = (e) => {
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+    }
+    if (final) {
+      const alts = [final.toLowerCase().trim()];
+      // kumpulkan semua alternatif jika tersedia
+      for (let i = 1; i < (e.results[0] || []).length; i++) {
+        alts.push(e.results[0][i].transcript.toLowerCase().trim());
+      }
+      handleConfirmVoice(alts);
+    }
   };
-  r.onerror = () => {
+  // Override onend sementara untuk mode konfirmasi
+  Voice.recognition.onend = () => {
+    Voice.listening = false;
     Voice._confirmMode = false;
-    if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
-  };
-  r.onend = () => {
-    Voice._confirmMode = false;
-    // Jika recognition ini sudah tidak aktif (di-null oleh closeConfirm atau handleConfirmVoice),
-    // jangan restart — save sudah berjalan atau modal sudah ditutup.
-    if (Intent._activeConfirmRecognition !== r) return;
+    Voice.updateUI();
+    // Jika sudah di-null (save berhasil atau modal ditutup), stop
+    if (Intent._activeConfirmRecognition !== Voice.recognition) return;
     Intent._activeConfirmRecognition = null;
-    // Jangan biarkan popup kehilangan mikrofon hanya karena pengguna
-    // menunggu beberapa detik sebelum berkata "ya" atau "benar".
+    // Restart mic selama modal masih aktif dan pending masih ada
     if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
       if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
       Intent._confirmRestartTimeout = setTimeout(() => {
         Intent._confirmRestartTimeout = null;
-        // Double-check: modal masih aktif sebelum restart mic
         if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
           confirmByVoice();
         }
       }, 300);
     }
   };
-  try { r.start(); } catch(e) {}
+  Voice.recognition.onerror = (e) => {
+    Voice.listening = false;
+    Voice._confirmMode = false;
+    Voice.updateUI();
+    if (sub) sub.textContent = 'Periksa kembali sebelum disimpan';
+  };
+  try {
+    Voice.recognition.maxAlternatives = 3;
+    Voice.recognition.interimResults = false;
+    Voice.recognition.start();
+    Voice.listening = true;
+    Voice.updateUI();
+  } catch(e) {
+    Voice._confirmMode = false;
+    Intent._activeConfirmRecognition = null;
+  }
 }
 
 function handleConfirmVoice(alts) {
