@@ -1809,8 +1809,9 @@ const NLP = {
     t = t.replace(/\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat|rb|ribu|juta|jt)?/gi, ' ');
     // buang "seharga" / "senilai" / "harganya"
     t = t.replace(/\b(seharga|senilai|harganya|sebesar|harga)\b/gi, ' ');
-    // buang "rp" dan angka rupiah
+    // buang "rp" dan angka rupiah (dengan atau tanpa angka setelahnya)
     t = t.replace(/rp\s?\d[\d.\s]*/gi, ' ');
+    t = t.replace(/\brp\b/gi, ' ');
     // buang sisa angka
     t = t.replace(/\d+/g, ' ');
     // buang kata sambung
@@ -2339,7 +2340,6 @@ const Intent = {
     if (!missing.length) {
       actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
       actionsHtml += `<button class="btn btn-primary" onclick="saveTransaction()">✔ Simpan</button>`;
-      actionsHtml += `<button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="confirmByVoice()">🎙️ Konfirmasi Suara</button>`;
     } else {
       actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
       actionsHtml += `<button class="btn btn-primary" onclick="askMissingWithVoice()">🎙️ Lengkapi dengan Suara</button>`;
@@ -2349,14 +2349,9 @@ const Intent = {
     this.pendingResult = parsed;
     openModal('confirmModal');
 
-    // bacakan konfirmasi — hanya kalau data sudah lengkap (nama & harga ada)
-    // lalu otomatis buka mic untuk konfirmasi suara
+    // bacakan konfirmasi, lalu otomatis buka mic setelah TTS selesai
     if (!missing.length) {
-      TTS.confirmTransaction(parsed);
-      // delay agar TTS selesai dulu, lalu mulai rekam konfirmasi
-      Intent._confirmVoiceTimeout = setTimeout(() => {
-        confirmByVoice();
-      }, 3500);
+      startConfirmAfterTTS(() => TTS.confirmTransaction(parsed));
     }
   },
 
@@ -2391,16 +2386,13 @@ const Intent = {
     this.pendingBatch = items;
     openModal('confirmModal');
 
-    // bacakan ringkasan batch
+    // bacakan ringkasan batch, lalu otomatis buka mic setelah TTS selesai
     const lang   = items[0]._lang || 'id';
     const cfg    = TTS._cfg[lang] || TTS._cfg.id;
     const opener = TTS._opener(lang);
     const names  = items.map(i => i.name).join(', ');
     const totalWords = TTS._amountToWords(total, lang);
-    TTS.speak(`${opener} saya catat ${items.length} pengeluaran: ${names}. Total ${totalWords}. Sudah benar?`, lang);
-    Intent._confirmVoiceTimeout = setTimeout(() => {
-      confirmByVoice();
-    }, 4500);
+    startConfirmAfterTTS(() => TTS.speak(`${opener} saya catat ${items.length} pengeluaran: ${names}. Total ${totalWords}. Sudah benar?`, lang));
   },
 
   showShoppingConfirm(parsed) {
@@ -2428,16 +2420,12 @@ const Intent = {
     actions.innerHTML = `
       <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
       <button class="btn btn-primary" onclick="saveShoppingList()">✔ Simpan</button>
-      <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="confirmByVoice()">🎙️ Konfirmasi Suara</button>
     `;
     this.pendingResult = parsed;
     openModal('confirmModal');
 
-    // bacakan daftar belanja sebagai konfirmasi suara
-    TTS.confirmShopping(parsed);
-    Intent._confirmVoiceTimeout = setTimeout(() => {
-      confirmByVoice();
-    }, 3500);
+    // bacakan daftar belanja, lalu otomatis buka mic setelah TTS selesai
+    startConfirmAfterTTS(() => TTS.confirmShopping(parsed));
   },
 
   askShoppingItems() {
@@ -3178,13 +3166,47 @@ function closeConfirm() {
   Intent.pendingBatch = null;
 }
 
-// Mulai rekam suara untuk konfirmasi (dipanggil otomatis setelah TTS, atau saat tap tombol)
+// Jalankan speakFn(), lalu setelah TTS benar-benar selesai, buka mic konfirmasi
+function startConfirmAfterTTS(speakFn) {
+  if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+  if (!window.speechSynthesis) {
+    speakFn();
+    setTimeout(confirmByVoice, 500);
+    return;
+  }
+  // Pasang listener onend SEBELUM speak agar tidak terlewat
+  const utter = new SpeechSynthesisUtterance('');
+  // Kita tidak pakai utter kosong — kita patch TTS.speak sementara
+  // Simpan onend asli, lalu override sekali pakai
+  const origSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
+  let _hooked = false;
+  window.speechSynthesis.speak = function(u) {
+    if (!_hooked) {
+      _hooked = true;
+      const prevOnEnd = u.onend;
+      u.onend = (e) => {
+        if (prevOnEnd) prevOnEnd(e);
+        window.speechSynthesis.speak = origSpeak; // restore
+        // kecil jeda agar mic tidak langsung tangkap echo
+        setTimeout(confirmByVoice, 400);
+      };
+    }
+    origSpeak(u);
+  };
+  speakFn();
+  // Fallback: kalau TTS tidak mendukung onend (beberapa browser), pakai setTimeout panjang
+  Intent._confirmVoiceTimeout = setTimeout(() => {
+    window.speechSynthesis.speak = origSpeak; // restore kalau belum
+    confirmByVoice();
+  }, 8000);
+}
+
+// Mulai rekam suara konfirmasi — dipanggil otomatis setelah TTS selesai
 function confirmByVoice() {
   if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
   if (!Voice.supported) return;
-  TTS.stop();
+  // JANGAN stop TTS di sini — sudah selesai sendiri via onend
   Voice._confirmMode = true;
-  // pakai voice recognition singkat untuk tangkap "ya/simpan/tidak"
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
   const r = new SR();
@@ -3192,9 +3214,8 @@ function confirmByVoice() {
   r.continuous = false;
   r.interimResults = false;
   r.maxAlternatives = 3;
-  // tampilkan status di confirm modal
   const sub = document.getElementById('confirmSub');
-  if (sub) sub.textContent = '🎙️ Dengarkan... bilang "ya" atau "tidak"';
+  if (sub) sub.textContent = '🎙️ Bilang "ya" untuk simpan, atau "tidak" untuk batal...';
   r.onresult = (e) => {
     const alts = [...e.results[0]].map(a => a.transcript.toLowerCase().trim());
     handleConfirmVoice(alts);
@@ -3226,9 +3247,9 @@ function handleConfirmVoice(alts) {
     showToast('Dibatalkan.');
     TTS.speak('Oke, dibatalkan.', 'id');
   } else {
-    // tidak jelas — tanya lagi
+    // tidak jelas — tampilkan pesan, mic sudah tutup sendiri
     const sub = document.getElementById('confirmSub');
-    if (sub) sub.textContent = 'Tidak terdengar. Ketuk "Simpan" atau "Konfirmasi Suara"';
+    if (sub) sub.textContent = 'Tidak terdengar. Ketuk "✔ Simpan" atau "Batal".';
   }
 }
 function toggleVoice() {
