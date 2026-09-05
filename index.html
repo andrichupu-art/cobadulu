@@ -3637,7 +3637,7 @@ function startConfirmAfterTTS(speakFn, afterTTS) {
     setTimeout(() => {
       if (afterTTS) afterTTS();
       confirmByVoice();
-    }, 700);
+    }, 100);
     return;
   }
   // Pasang listener onend SEBELUM speak agar tidak terlewat
@@ -3657,7 +3657,7 @@ function startConfirmAfterTTS(speakFn, afterTTS) {
         setTimeout(() => {
           if (afterTTS) afterTTS();
           confirmByVoice();
-        }, 700);
+        }, 100);
       };
     }
     origSpeak(u);
@@ -3805,6 +3805,25 @@ function handleConfirmVoice(alts) {
     TTS.stop(); // stop TTS sebelumnya saja, bukan closeConfirm
     Voice._confirmMode = false;
     if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+    if (Intent._confirmRestartTimeout) { clearTimeout(Intent._confirmRestartTimeout); Intent._confirmRestartTimeout = null; }
+    if (Intent._confirmReminderTimeout) { clearTimeout(Intent._confirmReminderTimeout); Intent._confirmReminderTimeout = null; }
+    if (Intent._confirmCancelTimeout) { clearTimeout(Intent._confirmCancelTimeout); Intent._confirmCancelTimeout = null; }
+    // ⭐ FIX: null-kan activeConfirmRecognition SEBELUM stop, sama seperti cabang "ya",
+    // agar onend milik sesi konfirmasi tidak menyambung ulang / bentrok dengan sesi baru.
+    Intent._activeConfirmRecognition = null;
+    Voice._ignoreRecognitionUntil = Date.now() + 700;
+    if (Voice.listening) {
+      try { Voice.recognition && Voice.recognition.stop(); } catch (e) {}
+    }
+    // ⭐ FIX: kembalikan handler mic ke mode normal (onresult/onend/onerror),
+    // sebelumnya ini tidak pernah dipanggil sehingga recognition tetap terjebak
+    // di handler mode-konfirmasi lalu Voice.start() berikutnya gagal diam-diam.
+    restoreVoiceHandlers();
+    // ⭐ FIX: bersihkan sisa transcript ("tidak") agar voice modal baru tidak
+    // langsung menampilkan status "Memproses..." yang tidak pernah selesai.
+    Voice.finalTranscript = '';
+    Voice.interimTranscript = '';
+    Voice.listening = false;
     Intent.pendingResult = null;
     Intent.pendingBatch = null;
     
