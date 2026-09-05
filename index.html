@@ -1203,9 +1203,11 @@ function normalizeAIResult(value, raw) {
     // Jika AI mengembalikan amount yang terlalu kecil (< 100), kemungkinan salah
     // mengisi qty ke amount — coba rescue dari raw text menggunakan NLP.
     const aiAmount = Number.isFinite(Number(result.amount)) ? Math.round(Number(result.amount)) : null;
-    if (aiAmount && aiAmount < 100 && raw) {
+    if (aiAmount && aiAmount < 1000 && raw) {
+      // AI mengembalikan nilai terlalu kecil — kemungkinan qty terisi ke amount.
+      // Coba rescue dari teks asli; jika tidak ada angka harga yang valid, biarkan null.
       const rescuedAmount = NLP.extractAmount(raw);
-      parsed.amount = (rescuedAmount && rescuedAmount >= 1000) ? rescuedAmount : aiAmount;
+      parsed.amount = (rescuedAmount && rescuedAmount >= 1000) ? rescuedAmount : null;
     } else {
       parsed.amount = aiAmount;
     }
@@ -2620,7 +2622,7 @@ const Intent = {
           <div class="confirm-type ${isIncome ? 'in' : 'out'}">${isIncome ? 'Pemasukan' : 'Pengeluaran'}</div>
           <div class="confirm-name">${escapeHtml(it.name)}</div>
           ${it.qty ? `<div class="confirm-detail">${it.qty} ${it.unit || ''}</div>` : ''}
-          <div class="confirm-amount">${formatRupiah(it.amount)}</div>
+          ${it.amount ? `<div class="confirm-amount">${formatRupiah(it.amount)}</div>` : `<div class="confirm-amount" style="color:#ef4444;font-size:14px;">⚠️ Harga belum diketahui</div>`}
           <div class="confirm-category">Kategori: ${escapeHtml(it.category)}</div>
         </div>`;
     });
