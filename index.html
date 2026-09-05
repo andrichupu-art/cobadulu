@@ -2440,15 +2440,9 @@ const Intent = {
     }
     body.innerHTML = html;
 
-    let actionsHtml = '';
-    if (!missing.length) {
-      actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
-      actionsHtml += `<button class="btn btn-primary" onclick="saveTransaction()">✔ Simpan</button>`;
-    } else {
-      actionsHtml += `<button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>`;
-      actionsHtml += `<button class="btn btn-primary" onclick="askMissingWithVoice()">🎙️ Lengkapi dengan Suara</button>`;
-    }
-    actions.innerHTML = actionsHtml;
+    // Tidak ada tombol — flow sepenuhnya suara
+    // Mic akan terbuka otomatis di startConfirmAfterTTS atau untuk lengkapi data
+    actions.innerHTML = '';
 
     this.pendingResult = parsed;
     openModal('confirmModal');
@@ -2483,10 +2477,8 @@ const Intent = {
         </div>`;
     });
     body.innerHTML = html;
-    actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
-      <button class="btn btn-primary" onclick="saveBatch()">Simpan Semua</button>
-    `;
+    // Tidak ada tombol — flow sepenuhnya suara
+    actions.innerHTML = '';
     this.pendingBatch = items;
     openModal('confirmModal');
 
@@ -2521,10 +2513,8 @@ const Intent = {
     html += `</div>`;
     body.innerHTML = html;
 
-    actions.innerHTML = `
-      <button class="btn btn-secondary" onclick="closeConfirm()">Batal</button>
-      <button class="btn btn-primary" onclick="saveShoppingList()">✔ Simpan</button>
-    `;
+    // Tidak ada tombol — flow sepenuhnya suara
+    actions.innerHTML = '';
     this.pendingResult = parsed;
     openModal('confirmModal');
 
@@ -3376,8 +3366,8 @@ function confirmByVoice() {
 }
 
 function handleConfirmVoice(alts) {
-  const yes = /^(ya|iya|yep|yap|ok|oke|benar|betul|simpan|save|lanjut|setuju|bener|correct|yes)\b/;
-  const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus)\b/;
+  const yes = /^(ya|iya|yep|yap|ok|oke|okey|benar|betul|simpan|save|lanjut|setuju|bener|correct|yes|jadi|gas|go|proceed|next|continue|yak|ye|yep|mantap|baik|gass|okee|lakuin|catat|rekam)\b/;
+  const no  = /^(tidak|nggak|ngga|gak|ga|batal|cancel|salah|ubah|no|nope|hapus|jangan|wait|tunggu|hold)\b/;
   const matched = alts.find(a => yes.test(a));
   const rejected = alts.find(a => no.test(a));
   if (matched) {
@@ -3390,13 +3380,29 @@ function handleConfirmVoice(alts) {
       else saveTransaction();
     }
   } else if (rejected) {
-    closeConfirm();
-    showToast('Dibatalkan.');
-    TTS.speak('Oke, dibatalkan.', 'id');
+    // User bilang "salah" — tutup modal, bilang "silahkan ulangi lagi", dan buka mic untuk input baru
+    // JANGAN call closeConfirm() dulu (karena itu akan TTS.stop()), langsung speak dulu
+    TTS.stop(); // stop TTS sebelumnya saja, bukan closeConfirm
+    Voice._confirmMode = false;
+    if (Intent._confirmVoiceTimeout) { clearTimeout(Intent._confirmVoiceTimeout); Intent._confirmVoiceTimeout = null; }
+    Intent.pendingResult = null;
+    Intent.pendingBatch = null;
+    
+    // Bicara "Silahkan ulangi lagi"
+    TTS.speak('Silahkan ulangi lagi', 'id');
+    
+    // Setelah jeda, tutup modal dan buka voice modal untuk input baru
+    setTimeout(() => {
+      closeModal('confirmModal');
+      openVoiceModal();
+      Voice.start();
+    }, 800);
   } else {
-    // tidak jelas — tampilkan pesan, mic sudah tutup sendiri
+    // tidak jelas — tampilkan pesan dan buka mic lagi untuk konfirmasi
     const sub = document.getElementById('confirmSub');
-    if (sub) sub.textContent = 'Tidak terdengar. Ketuk "✔ Simpan" atau "Batal".';
+    if (sub) sub.textContent = 'Tidak terdengar. Bilang "ya" atau "tidak"...';
+    // Otomatis buka mic lagi untuk konfirmasi
+    setTimeout(confirmByVoice, 600);
   }
 }
 function toggleVoice() {
