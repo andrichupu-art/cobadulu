@@ -2355,13 +2355,15 @@ const Intent = {
       showToast('AI tidak tersedia, memakai parser lokal.');
     }
     // Prioritas deterministik: "beli/bayar ... nominal" selalu transaksi.
-    // Ini mencegah klasifikasi AI mengubah pembelian berharga menjadi daftar belanja.
+    // Nominal dari parser lokal harus mengalahkan AI karena parser lokal memahami
+    // format Indonesia seperti "20.000". Tanpa ini, AI kadang mengira angka qty
+    // (contoh: "2 kg") sebagai amount dan tampilan menjadi "Rp 2".
     if (quickIntent === 'create_expense' && localParsed.amount) {
       parsed = {
         ...parsed,
         intent: 'create_expense',
         name: parsed.name || localParsed.name,
-        amount: parsed.amount || localParsed.amount,
+        amount: localParsed.amount,
         qty: parsed.qty ?? localParsed.qty,
         unit: parsed.unit || localParsed.unit,
         category: parsed.category || localParsed.category
