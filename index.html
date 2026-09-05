@@ -2437,6 +2437,16 @@ const Intent = {
     text = Glossary.apply(text);
 
     const localParsed = NLP.parse(text);
+    // Batch transaksi harus diputuskan secara lokal sebelum AI dipanggil.
+    // AI kadang mengembalikan satu amount (misalnya 2 dari "2 kg") untuk
+    // kalimat yang sebenarnya berisi beberapa item.
+    const localBatch = ['create_income', 'create_expense'].includes(quickIntent)
+      ? NLP.parseBatch(text, quickIntent)
+      : null;
+    if (localBatch && localBatch.length >= 2) {
+      this.showBatchConfirm(localBatch);
+      return;
+    }
     let parsed = localParsed;
     const providers = [];
     if (GroqAI.getKey()) providers.push(GroqAI);
