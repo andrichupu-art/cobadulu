@@ -1383,7 +1383,8 @@ const GroqAI = {
     const available = (data.data || [])
       .map(item => String(item.id || ''))
       .filter(Boolean)
-      .filter(id => !/whisper|tts|guard|prompt-guard|moderation|vision/i.test(id));
+      .filter(id => !/whisper|tts|guard|prompt-guard|moderation|vision/i.test(id))
+      .filter(id => !id.includes('/')); // Buang model third-party (org/model) — butuh terms acceptance
     this.availableModels = available;
     return available;
   },
@@ -1826,6 +1827,14 @@ const NLP = {
       if (!isNaN(n) && n > 0) return Math.round(n);
     }
 
+    // Speech Recognition kadang mengubah "20.000" menjadi "20 000".
+    // Jangan biarkan spasi pemisah ribuan dianggap sebagai dua angka terpisah.
+    const spacedThousands = t.match(/(?:^|\s)(\d{1,3}(?:[.\s]\d{3})+)(?=\s|$)/);
+    if (spacedThousands) {
+      const n = parseInt(spacedThousands[1].replace(/[.\s]/g, ''), 10);
+      if (!isNaN(n) && n > 0) return n;
+    }
+
     // cari frasa angka Indonesia: "dua puluh ribu", "40 ribu", "1 juta"
     const phraseMatch = t.match(/((?:seratus |dua ratus |tiga ratus |empat ratus |lima ratus |enam ratus |tujuh ratus |delapan ratus |sembilan ratus )?(?:(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|\d+)\s+)*(?:ratus|puluh|ribu|rb|juta|jt|belas)(?:\s+(?:\d+|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas))*)/g);
     if (phraseMatch) {
@@ -1972,6 +1981,10 @@ const NLP = {
 
     // buang bagian angka & satuan
     t = t.replace(/\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat|rb|ribu|juta|jt)?/gi, ' ');
+    // buang angka kata beserta satuannya, misalnya "dua kilo" atau
+    // "dua puluh ribu", agar nama item tidak menelan qty/harga.
+    const numberWords = '(?:nol|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|belas|puluh|ratus)';
+    t = t.replace(new RegExp(`\\b${numberWords}(?:\\s+${numberWords})*\\s+(?:kilo|kg|kilogram|gram|bungkus|pcs|liter|batang|buah|kotak|plastik|ribu|rb|juta|jt)\\b`, 'gi'), ' ');
     // buang "seharga" / "senilai" / "harganya"
     t = t.replace(/\b(seharga|senilai|harganya|sebesar|harga)\b/gi, ' ');
     // buang "rp" dan angka rupiah (dengan atau tanpa angka setelahnya)
@@ -2123,6 +2136,27 @@ const NLP = {
   //   "pisang 1 kg 20 ribu jagung 3 kg 30 ribu tempe 2 kg 10 ribu"
   //   "beli pisang 20rb, beli jagung 30rb"
   // Mengembalikan array parsed[] atau null kalau hanya satu item.
+  extractBatchAmount(text) {
+    const source = String(text || '').trim();
+    if (!source) return null;
+
+    // Pada ucapan "dua kg dua puluh ribu", harga berada setelah satuan.
+    // Ambil bagian itu agar angka qty tidak terbaca sebagai harga.
+    const afterUnit = source.match(/\b(?:kilo|kg|kilogram|gram|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\b\s+(.+)$/i);
+    if (afterUnit) {
+      const priceText = afterUnit[1].trim();
+      const wordPrice = priceText.match(/((?:nol|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|belas|puluh|ratus)(?:\s+(?:nol|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas|belas|puluh|ratus))*\s+(?:ribu|rb|juta|jt))/i);
+      if (wordPrice) {
+        const parsedWordPrice = this.parseIndonesianNumber(wordPrice[1]);
+        if (parsedWordPrice) return parsedWordPrice;
+      }
+      const numericPrice = this.extractAmount(priceText);
+      if (numericPrice) return numericPrice;
+    }
+
+    return this.extractAmount(source);
+  },
+
   parseBatch(text, baseIntent) {
     const t = text.trim();
 
@@ -2142,13 +2176,13 @@ const NLP = {
       // Contoh: "pisang 1kg 20000 jagung 3kg 30000 tempe 2kg 10000"
       // ⭐ FIX: pattern harga harus robust untuk "20.000" format Indonesia
       // Regex: nama (1-3 kata non-angka) + opsional qty + harga (angka >= 100 atau "X ribu/rb")
-      const segRe = /([a-zA-Z\u00C0-\u024F]+(?:\s+[a-zA-Z\u00C0-\u024F]+){0,2})\s+(?:(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|gram|g|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\s+)?(\d+(?:[.,]\d{3})*(?:[.,]\d+)?(?:\s*(?:ribu|rb|juta|jt))?|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas)\s+(?:ribu|ratus\s+ribu|juta)\b)/gi;
+      const segRe = /([a-zA-Z\u00C0-\u024F]+(?:\s+[a-zA-Z\u00C0-\u024F]+){0,2})\s+(?:(\d+(?:[.,]\d+)?)\s*(?:kg|kilo|gram|g|bungkus|pak|pcs|liter|l|batang|buah|bij|butir|kotak|ikat|plastik)\s+)?(\d+(?:[.,\s]\d{3})*(?:[.,]\d+)?(?:\s*(?:ribu|rb|juta|jt))?|\b(?:satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|sebelas)\s+(?:ribu|ratus\s+ribu|juta)\b)/gi;
       const matches = [...t.matchAll(segRe)];
       if (matches.length >= 2) {
         return matches.map(m => {
           const segText = m[0];
           const name = m[1].trim();
-          const amount = this.extractAmount(segText);
+          const amount = this.extractBatchAmount(segText);
           const q = this.extractQuantity(segText);
           return {
             intent: baseIntent,
@@ -2170,7 +2204,7 @@ const NLP = {
       // kalau bagian dimulai dengan kata kerja (beli, jual...), strip dulu
       const cleaned = part.replace(/^(beli|belanja|bayar|jual)\s+/i, '').trim();
       const name = this.extractItemName(cleaned, baseIntent);
-      let amount = this.extractAmount(cleaned);
+      let amount = this.extractBatchAmount(cleaned);
       const q = this.extractQuantity(cleaned);
       
       // ⭐ SAFETY: jika amount sangat kecil (< 100), kemungkinan parser salah tangkap quantity
