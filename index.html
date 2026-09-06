@@ -432,102 +432,94 @@
     position: fixed;
     bottom: calc(24px + env(safe-area-inset-bottom));
     left: 20px;
-    z-index: 30;
+    z-index: 50;
     width: 52px; height: 52px;
-    border-radius: 16px;
+    border-radius: 50%;
     background: #047857;
     color: #ffffff;
     display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 5px;
     box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, width 0.25s ease, height 0.25s ease, border-radius 0.25s ease;
     border: none; cursor: pointer;
   }
   .hamburger-btn:active { transform: scale(0.93); }
   .hamburger-btn .hb-line {
     width: 20px; height: 2px; background: #fff; border-radius: 2px;
-    transition: transform 0.25s ease, opacity 0.2s ease;
+    transition: transform 0.25s ease, opacity 0.2s ease, display 0.2s ease;
     transform-origin: center;
   }
   .hamburger-btn.open .hb-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
   .hamburger-btn.open .hb-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
   .hamburger-btn.open .hb-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* Overlay gelap saat drawer terbuka */
-  .nav-drawer-overlay {
-    position: fixed; inset: 0;
-    background: rgba(15, 23, 42, 0.45);
-    z-index: 25;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.25s ease;
-    backdrop-filter: blur(2px);
-  }
-  .nav-drawer-overlay.open { opacity: 1; pointer-events: all; }
-
-  /* Drawer slide dari kiri */
-  .nav-drawer {
+  /* Floating circular menu */
+  .floating-menu {
     position: fixed;
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(24px + env(safe-area-inset-bottom));
     left: 20px;
-    z-index: 28;
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 12px 8px;
-    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
-    display: flex; flex-direction: column; gap: 4px;
-    min-width: 180px;
-    transform: translateX(-120%) scale(0.92);
-    transform-origin: bottom left;
-    opacity: 0;
+    z-index: 49;
+    width: 52px; height: 52px;
     pointer-events: none;
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
-  .drawer-profile {
-    padding: 8px 14px 10px;
-    margin-bottom: 4px;
-    border-bottom: 1px solid #e5e7eb;
-    color: #0f172a;
-    font-size: 14px;
-    font-weight: 600;
+  .floating-menu.open {
+    pointer-events: all;
+    opacity: 1;
   }
-  .nav-drawer.open {
-    transform: translateX(0) scale(1);
+  .floating-menu.open .fm-item {
     opacity: 1;
     pointer-events: all;
   }
-  .nav-drawer-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 11px 14px;
-    border-radius: 13px;
-    font-size: 14px; font-weight: 500;
-    color: #374151;
-    transition: background 0.15s ease, color 0.15s ease;
-    text-align: left;
-    border: none; cursor: pointer; background: none; width: 100%;
-  }
-  .nav-drawer-item .nd-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
-  .nav-drawer-item:hover { background: #f3f4f6; }
-  .nav-drawer-item.active { background: #ecfdf5; color: #047857; font-weight: 600; }
-  .nav-drawer-item.active .nd-icon { }
 
-  /* Label active page di samping hamburger */
-  .hamburger-label {
-    position: fixed;
-    bottom: calc(30px + env(safe-area-inset-bottom));
-    left: 82px;
-    z-index: 30;
-    font-size: 13px; font-weight: 600;
-    color: #047857;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    padding: 5px 12px;
-    border-radius: 999px;
-    pointer-events: none;
-    transition: opacity 0.2s;
+  /* Menu items dalam lingkaran */
+  .fm-item {
+    position: absolute;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #047857;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
+    opacity: 0;
+    transform: translate(0, 0) scale(0.6);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    bottom: 0; left: 0;
   }
+  .floating-menu.open .fm-item {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .fm-item:nth-child(1) { transition-delay: 0.05s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(1) { transform: translate(0, -70px) scale(1); }
+  
+  .fm-item:nth-child(2) { transition-delay: 0.1s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(2) { transform: translate(50px, -50px) scale(1); }
+  
+  .fm-item:nth-child(3) { transition-delay: 0.15s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(3) { transform: translate(70px, 0) scale(1); }
+  
+  .fm-item:nth-child(4) { transition-delay: 0.2s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(4) { transform: translate(50px, 50px) scale(1); }
+  
+  .fm-item:nth-child(5) { transition-delay: 0.25s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(5) { transform: translate(0, 70px) scale(1); }
 
-  /* Sembunyikan bottom-nav lama — kita ganti */
-  .bottom-nav { display: none !important; }
+  .fm-item:hover { background: #065f46; transform: scale(1.1); }
+  .fm-item.active { background: #10b981; }
+
+  /* Overlay backdrop */
+  .floating-menu-overlay {
+    position: fixed; inset: 0;
+    z-index: 48;
+    display: none;
+  }
+  .floating-menu-overlay.open {
+    display: block;
+  }
   .nav-item { display: none; }
 
   /* ============ MODAL ============ */
@@ -1201,33 +1193,22 @@
 </div>
 
 <!-- ==================== HAMBURGER BUTTON ==================== -->
-<button class="hamburger-btn" id="hamburgerBtn" onclick="toggleDrawer()" aria-label="Menu navigasi">
+<button class="hamburger-btn" id="hamburgerBtn" onclick="toggleFloatingMenu()" aria-label="Menu navigasi">
   <span class="hb-line"></span>
   <span class="hb-line"></span>
   <span class="hb-line"></span>
 </button>
 
-<!-- ==================== NAV DRAWER ==================== -->
-<div class="nav-drawer-overlay" id="navDrawerOverlay" onclick="closeDrawer()"></div>
-<nav class="nav-drawer" id="navDrawer">
-  <div class="drawer-profile" id="drawerUserName">Catat Aja</div>
-  <button class="nav-drawer-item active" data-page="home" onclick="goToNav('home')">
-    <span class="nd-icon"><span class="voice-visualizer" style="width:22px;height:18px;gap:2px;" aria-hidden="true"><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span><span style="width:3px;height:8px;"></span></span></span>
-    Suara
+<!-- ==================== FLOATING CIRCULAR MENU ==================== -->
+<div class="floating-menu" id="floatingMenu">
+  <button class="fm-item" data-page="home" onclick="goToNav('home')" title="Suara">
+    <span class="voice-visualizer" style="width:18px;height:16px;gap:2px;" aria-hidden="true"><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span></span>
   </button>
-  <button class="nav-drawer-item" data-page="summary" onclick="goToNav('summary')">
-    <span class="nd-icon">🏠</span>Ringkasan
-  </button>
-  <button class="nav-drawer-item" data-page="notes" onclick="goToNav('notes')">
-    <span class="nd-icon">📝</span>Catatan
-  </button>
-  <button class="nav-drawer-item" data-page="shopping" onclick="goToNav('shopping')">
-    <span class="nd-icon">🛒</span>Belanja
-  </button>
-  <button class="nav-drawer-item" data-page="settings" onclick="goToNav('settings')">
-    <span class="nd-icon">⚙️</span>Lainnya
-  </button>
-</nav>
+  <button class="fm-item" data-page="summary" onclick="goToNav('summary')" title="Ringkasan">🏠</button>
+  <button class="fm-item" data-page="notes" onclick="goToNav('notes')" title="Catatan">📝</button>
+  <button class="fm-item" data-page="shopping" onclick="goToNav('shopping')" title="Belanja">🛒</button>
+  <button class="fm-item" data-page="settings" onclick="goToNav('settings')" title="Lainnya">⚙️</button>
+</div>
 
 <!-- ==================== VOICE MODAL ==================== -->
 <div class="modal-overlay" id="voiceModal">
@@ -3726,35 +3707,30 @@ function goTo(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const legacyNav = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (legacyNav) legacyNav.classList.add('active');
-  // Update drawer active state
-  document.querySelectorAll('.nav-drawer-item').forEach(n => n.classList.remove('active'));
-  const drawerItem = document.querySelector(`.nav-drawer-item[data-page="${page}"]`);
-  if (drawerItem) drawerItem.classList.add('active');
-  // Update label
-  const lbl = document.getElementById('hamburgerLabel');
-  if (lbl) lbl.textContent = PAGE_LABELS[page] || page;
+  // Update floating menu active state
+  document.querySelectorAll('.fm-item').forEach(n => n.classList.remove('active'));
+  const fmItem = document.querySelector(`.fm-item[data-page="${page}"]`);
+  if (fmItem) fmItem.classList.add('active');
   window.scrollTo(0, 0);
 }
 
-/* ── Hamburger drawer helpers ── */
-let _drawerOpen = false;
-function toggleDrawer() {
-  _drawerOpen ? closeDrawer() : openDrawer();
+/* ── Floating circular menu ── */
+let _floatingMenuOpen = false;
+function toggleFloatingMenu() {
+  _floatingMenuOpen ? closeFloatingMenu() : openFloatingMenu();
 }
-function openDrawer() {
-  _drawerOpen = true;
-  document.getElementById('navDrawer').classList.add('open');
-  document.getElementById('navDrawerOverlay').classList.add('open');
+function openFloatingMenu() {
+  _floatingMenuOpen = true;
+  document.getElementById('floatingMenu').classList.add('open');
   document.getElementById('hamburgerBtn').classList.add('open');
 }
-function closeDrawer() {
-  _drawerOpen = false;
-  document.getElementById('navDrawer').classList.remove('open');
-  document.getElementById('navDrawerOverlay').classList.remove('open');
+function closeFloatingMenu() {
+  _floatingMenuOpen = false;
+  document.getElementById('floatingMenu').classList.remove('open');
   document.getElementById('hamburgerBtn').classList.remove('open');
 }
 function goToNav(page) {
-  closeDrawer();
+  closeFloatingMenu();
   goTo(page);
 }
 
@@ -4432,6 +4408,16 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('confirmBanner').addEventListener('click', (e) => {
     // Hanya tutup jika klik di area kosong (bukan tombol)
     if (e.target.tagName === 'BUTTON') return;
+  });
+
+  // Close floating menu ketika click di area lain
+  document.addEventListener('click', (e) => {
+    const floatingMenu = document.getElementById('floatingMenu');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    // Jika click bukan di menu atau hamburger, tutup menu
+    if (!floatingMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+      closeFloatingMenu();
+    }
   });
 });
 </script>
