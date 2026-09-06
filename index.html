@@ -4701,12 +4701,13 @@ function handleConfirmVoice(alts) {
     // Bicara "Silahkan ulangi lagi"
     TTS.speak('Silahkan ulangi lagi', 'id');
     
-    // Setelah jeda, tutup modal dan buka voice modal untuk input baru
+    // Setelah pesan selesai, tutup banner dan langsung dengarkan input baru.
+    // Jangan buka voice modal: pengguna cukup langsung berbicara lagi dari
+    // halaman utama.
     setTimeout(() => {
       closeModal('confirmModal');
-      openVoiceModal();
       Voice.start();
-    }, 800);
+    }, 1200);
   } else {
     // tidak jelas — tampilkan pesan dan buka mic lagi untuk konfirmasi
     const sub = document.getElementById('confirmSub');
