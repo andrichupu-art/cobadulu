@@ -2980,6 +2980,8 @@ const NLP = {
 const Voice = {
   recognition: null,
   listening: false,
+  _startRetryTimer: null,
+  _startRetryCount: 0,
   finalTranscript: '',
   interimTranscript: '',
   supported: !!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window),
@@ -2994,6 +2996,11 @@ const Voice = {
     this.recognition.maxAlternatives = 1;
 
     this.recognition.onstart = () => {
+      if (this._startRetryTimer) {
+        clearTimeout(this._startRetryTimer);
+        this._startRetryTimer = null;
+      }
+      this._startRetryCount = 0;
       this.listening = true;
       this.finalTranscript = '';
       this.interimTranscript = '';
@@ -3051,7 +3058,24 @@ const Voice = {
       this._discardNextResult = false;
       this.recognition.start();
     } catch (e) {
-      if (!this.listening) showToast('Mikrofon belum bisa dimulai. Izinkan akses mikrofon lalu coba lagi.');
+      // SpeechRecognition masih bisa berada di fase "stopping" setelah
+      // sesi konfirmasi dihentikan. Coba ulang sebentar kemudian agar
+      // indikator listening tidak berhenti hanya karena race condition.
+      if (e.name === 'InvalidStateError' || /already started|started/i.test(e.message || '')) {
+        if (this._startRetryCount < 12) {
+          this._startRetryCount++;
+          if (this._startRetryTimer) clearTimeout(this._startRetryTimer);
+          this._startRetryTimer = setTimeout(() => {
+            this._startRetryTimer = null;
+            if (!this.listening) this.start();
+          }, 250);
+        } else {
+          this._startRetryCount = 0;
+          showToast('Mikrofon belum bisa dimulai. Coba tekan mikrofon lagi.');
+        }
+      } else if (!this.listening) {
+        showToast('Mikrofon belum bisa dimulai. Izinkan akses mikrofon lalu coba lagi.');
+      }
     }
   },
   stop() {
