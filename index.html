@@ -178,22 +178,41 @@
     max-width: 260px; line-height: 1.6;
   }
   .home-saldo-pill {
-    margin-top: 40px;
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 76px; /* 20px hamburger left + 44px lebar + 12px gap */
+    right: 20px;
+    z-index: 50;
     background: #ffffff;
     border: 1px solid #eef0f3;
     border-radius: 999px;
-    padding: 10px 22px;
-    display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 0;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.10);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s;
+    height: 44px; /* sama tinggi dengan hamburger */
   }
   .home-saldo-pill:active { background: #f9fafb; }
-  .home-saldo-pill .pill-label { font-size: 12px; color: #6b7280; }
-  .home-saldo-pill .pill-value { font-size: 15px; font-weight: 600; color: #111827; }
+  .home-saldo-pill.pill-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px);
+  }
+  .home-saldo-pill > div:not(.pill-sep) {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+  }
+  .home-saldo-pill .pill-label { font-size: 10px; color: #6b7280; line-height: 1.2; }
+  .home-saldo-pill .pill-value {
+    font-size: 13px; font-weight: 600; color: #111827;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
+  }
   .home-saldo-pill .pill-value.in  { color: #10b981; }
   .home-saldo-pill .pill-value.out { color: #ef4444; }
-  .home-saldo-pill .pill-sep { width: 1px; height: 20px; background: #e5e7eb; }
+  .home-saldo-pill .pill-sep { width: 1px; height: 26px; background: #e5e7eb; flex-shrink: 0; margin: 0 6px; }
 
   /* ============ HOME ============ */
   .greeting { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
@@ -430,35 +449,44 @@
   /* Tombol hamburger di pojok kiri bawah */
   .hamburger-btn {
     position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(16px + env(safe-area-inset-bottom));
     left: 20px;
     z-index: 50;
-    width: 52px; height: 52px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     background: #047857;
     color: #ffffff;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 6px 20px rgba(4, 120, 87, 0.45);
-    transition: transform 0.2s ease, background 0.2s ease, width 0.25s ease, height 0.25s ease, border-radius 0.25s ease;
+    box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
+    transition: transform 0.2s ease, background 0.2s ease;
     border: none; cursor: pointer;
   }
   .hamburger-btn:active { transform: scale(0.93); }
-  .hamburger-btn .hb-line {
-    width: 20px; height: 2px; background: #fff; border-radius: 2px;
-    transition: transform 0.25s ease, opacity 0.2s ease, display 0.2s ease;
-    transform-origin: center;
+  .hamburger-icon {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    opacity: 1;
   }
-  .hamburger-btn.open .hb-line:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-  .hamburger-btn.open .hb-line:nth-child(2) { opacity: 0; transform: scaleX(0); }
-  .hamburger-btn.open .hb-line:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .hamburger-close {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    position: absolute;
+    opacity: 0;
+  }
+  .hamburger-btn.open .hamburger-icon {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+  .hamburger-btn.open .hamburger-close {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
 
   /* Floating circular menu */
   .floating-menu {
     position: fixed;
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(16px + env(safe-area-inset-bottom));
     left: 20px;
     z-index: 49;
-    width: 52px; height: 52px;
+    width: 44px; height: 44px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -472,7 +500,6 @@
     pointer-events: all;
   }
 
-  /* Menu items dalam lingkaran */
   .fm-item {
     position: absolute;
     width: 44px; height: 44px;
@@ -489,24 +516,29 @@
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     bottom: 0; left: 0;
   }
+  .fm-item svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+  }
   .floating-menu.open .fm-item {
     opacity: 1;
     transform: scale(1);
   }
   .fm-item:nth-child(1) { transition-delay: 0.05s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(1) { transform: translate(0, -70px) scale(1); }
+  .floating-menu.open .fm-item:nth-child(1) { transform: translate(60px, 0) scale(1); }
   
   .fm-item:nth-child(2) { transition-delay: 0.1s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(2) { transform: translate(50px, -50px) scale(1); }
+  .floating-menu.open .fm-item:nth-child(2) { transform: translate(120px, 0) scale(1); }
   
   .fm-item:nth-child(3) { transition-delay: 0.15s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(3) { transform: translate(70px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(3) { transform: translate(180px, 0) scale(1); }
   
   .fm-item:nth-child(4) { transition-delay: 0.2s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(4) { transform: translate(50px, 50px) scale(1); }
+  .floating-menu.open .fm-item:nth-child(4) { transform: translate(240px, 0) scale(1); }
   
   .fm-item:nth-child(5) { transition-delay: 0.25s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(5) { transform: translate(0, 70px) scale(1); }
+  .floating-menu.open .fm-item:nth-child(5) { transform: translate(300px, 0) scale(1); }
 
   .fm-item:hover { background: #065f46; transform: scale(1.1); }
   .fm-item.active { background: #10b981; }
@@ -1015,23 +1047,6 @@
       <div class="home-hint" id="homeHint">Bicara Sekarang</div>
       <div id="homeTranscript" style="display:none; margin-top:12px; font-size:14px; color:#374151; background:#fff; border:1px solid #eef0f3; border-radius:12px; padding:12px 16px; max-width:280px; text-align:left; font-style:italic;"></div>
 
-      <!-- Saldo ringkas — tap buka tab Ringkasan -->
-      <button class="home-saldo-pill" onclick="goTo('summary')" aria-label="Buka ringkasan saldo">
-        <div>
-          <div class="pill-label">Pemasukan</div>
-          <div class="pill-value in" id="sumIn">Rp 0</div>
-        </div>
-        <div class="pill-sep"></div>
-        <div>
-          <div class="pill-label">Pengeluaran</div>
-          <div class="pill-value out" id="sumOut">Rp 0</div>
-        </div>
-        <div class="pill-sep"></div>
-        <div>
-          <div class="pill-label">Saldo</div>
-          <div class="pill-value" id="sumBalance">Rp 0</div>
-        </div>
-      </button>
     </div>
   </section>
 
@@ -1192,22 +1207,54 @@
   </nav>
 </div>
 
+<!-- ==================== SALDO PILL (fixed, sejajar hamburger) ==================== -->
+<button class="home-saldo-pill" id="saldoPill" onclick="goTo('summary')" aria-label="Buka ringkasan saldo">
+  <div>
+    <div class="pill-label">Pemasukan</div>
+    <div class="pill-value in" id="sumIn">Rp 0</div>
+  </div>
+  <div class="pill-sep"></div>
+  <div>
+    <div class="pill-label">Pengeluaran</div>
+    <div class="pill-value out" id="sumOut">Rp 0</div>
+  </div>
+  <div class="pill-sep"></div>
+  <div>
+    <div class="pill-label">Saldo</div>
+    <div class="pill-value" id="sumBalance">Rp 0</div>
+  </div>
+</button>
+
 <!-- ==================== HAMBURGER BUTTON ==================== -->
 <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleFloatingMenu()" aria-label="Menu navigasi">
-  <span class="hb-line"></span>
-  <span class="hb-line"></span>
-  <span class="hb-line"></span>
+  <svg class="hamburger-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+  <svg class="hamburger-close" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
 </button>
 
 <!-- ==================== FLOATING CIRCULAR MENU ==================== -->
 <div class="floating-menu" id="floatingMenu">
   <button class="fm-item" data-page="home" onclick="goToNav('home')" title="Suara">
-    <span class="voice-visualizer" style="width:18px;height:16px;gap:2px;" aria-hidden="true"><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span><span style="width:2px;height:7px;"></span></span>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
   </button>
-  <button class="fm-item" data-page="summary" onclick="goToNav('summary')" title="Ringkasan">🏠</button>
-  <button class="fm-item" data-page="notes" onclick="goToNav('notes')" title="Catatan">📝</button>
-  <button class="fm-item" data-page="shopping" onclick="goToNav('shopping')" title="Belanja">🛒</button>
-  <button class="fm-item" data-page="settings" onclick="goToNav('settings')" title="Lainnya">⚙️</button>
+  <button class="fm-item" data-page="summary" onclick="goToNav('summary')" title="Ringkasan">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+  </button>
+  <button class="fm-item" data-page="notes" onclick="goToNav('notes')" title="Catatan">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline><line x1="9" y1="14" x2="15" y2="14"></line><line x1="9" y1="18" x2="15" y2="18"></line></svg>
+  </button>
+  <button class="fm-item" data-page="shopping" onclick="goToNav('shopping')" title="Belanja">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+  </button>
+  <button class="fm-item" data-page="settings" onclick="goToNav('settings')" title="Lainnya">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path></svg>
+  </button>
 </div>
 
 <!-- ==================== VOICE MODAL ==================== -->
@@ -3723,11 +3770,15 @@ function openFloatingMenu() {
   _floatingMenuOpen = true;
   document.getElementById('floatingMenu').classList.add('open');
   document.getElementById('hamburgerBtn').classList.add('open');
+  const pill = document.getElementById('saldoPill');
+  if (pill) pill.classList.add('pill-hidden');
 }
 function closeFloatingMenu() {
   _floatingMenuOpen = false;
   document.getElementById('floatingMenu').classList.remove('open');
   document.getElementById('hamburgerBtn').classList.remove('open');
+  const pill = document.getElementById('saldoPill');
+  if (pill) pill.classList.remove('pill-hidden');
 }
 function goToNav(page) {
   closeFloatingMenu();
