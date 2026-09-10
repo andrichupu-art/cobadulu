@@ -534,19 +534,22 @@
     transform: scale(1);
   }
   .fm-item:nth-child(1) { transition-delay: 0.05s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(1) { transform: translate(60px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(1) { transform: translate(56px, 0) scale(1); }
   
   .fm-item:nth-child(2) { transition-delay: 0.1s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(2) { transform: translate(120px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(2) { transform: translate(112px, 0) scale(1); }
   
   .fm-item:nth-child(3) { transition-delay: 0.15s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(3) { transform: translate(180px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(3) { transform: translate(168px, 0) scale(1); }
   
   .fm-item:nth-child(4) { transition-delay: 0.2s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(4) { transform: translate(240px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(4) { transform: translate(224px, 0) scale(1); }
   
   .fm-item:nth-child(5) { transition-delay: 0.25s; transform: translate(0, 0) scale(0.6); }
-  .floating-menu.open .fm-item:nth-child(5) { transform: translate(300px, 0) scale(1); }
+  .floating-menu.open .fm-item:nth-child(5) { transform: translate(280px, 0) scale(1); }
+
+  .fm-item:nth-child(6) { transition-delay: 0.3s; transform: translate(0, 0) scale(0.6); }
+  .floating-menu.open .fm-item:nth-child(6) { transform: translate(336px, 0) scale(1); }
 
   .fm-item:hover { background: #065f46; transform: scale(1.1); }
   .fm-item.active { background: #2a7d6e; }
@@ -1238,6 +1241,7 @@
         </button>
       </div>
       <div class="home-hint" id="homeHint">Bicara Sekarang</div>
+      <div class="home-example" id="homeExample" style="margin-top:8px;">"jual cat pink standar 2 kg 50.000"<br/>"input stok cat biru 100 kg 2.500.000"</div>
       <div id="homeTranscript" style="display:none; margin-top:12px; font-size:14px; color:#374151; background:#fff; border:1px solid #eef0f3; border-radius:12px; padding:12px 16px; max-width:280px; text-align:left; font-style:italic;"></div>
 
     </div>
@@ -1267,13 +1271,13 @@
     </div>
 
     <div class="quick-actions" style="margin-top:18px;">
-      <button class="quick-action" onclick="quickVoice('Buat daftar belanja')">
-        <div class="qa-icon">🛒</div>Daftar Belanja
+      <button class="quick-action" onclick="startDirectVoice()">
+        <div class="qa-icon">🏷️</div>Catat Jual
       </button>
-      <button class="quick-action" onclick="quickVoice('Apa yang belum dibeli?')">
-        <div class="qa-icon">📋</div>Cek Belanja
+      <button class="quick-action" onclick="goToNav('stock')">
+        <div class="qa-icon">📦</div>Lihat Stok
       </button>
-      <button class="quick-action" onclick="quickVoice('Total belanja hari ini')">
+      <button class="quick-action" onclick="quickVoice('Total penjualan hari ini')">
         <div class="qa-icon">📊</div>Rekap Hari Ini
       </button>
     </div>
@@ -1299,6 +1303,16 @@
       🎙️ Tambah dengan Suara
     </button>
     <div id="shoppingList"></div>
+  </section>
+
+  <!-- PAGE: STOK -->
+  <section class="page" id="page-stock">
+    <div class="page-title">Stok Produk</div>
+    <div class="page-sub">Ucapkan "input stok [nama] [qty] [harga]" untuk tambah stok</div>
+    <button class="btn btn-primary btn-block" onclick="startDirectVoice()" style="margin-bottom:16px;">
+      🎙️ Input Stok dengan Suara
+    </button>
+    <div id="stockList"></div>
   </section>
 
   <!-- PAGE: REKAP -->
@@ -1444,6 +1458,9 @@
   </button>
   <button class="fm-item" data-page="shopping" onclick="goToNav('shopping')" title="Belanja">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+  </button>
+  <button class="fm-item" data-page="stock" onclick="goToNav('stock')" title="Stok">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
   </button>
   <button class="fm-item" data-page="settings" onclick="goToNav('settings')" title="Lainnya">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24"></path></svg>
@@ -1626,11 +1643,13 @@ const DB = {
       transactions: [],
       shoppingLists: [], // [{id, name, createdAt, items:[{id,name,qty,unit,done,price}]}]
       notes: [],
+      products: [], // [{id, name, unit, stock, costPrice, createdAt, updatedAt}]
       memory: { categoryByName: {}, unitByName: {}, preferences: { responseStyle: 'normal', ttsRate: 1.05 } }
     };
   }
 };
 let state = DB.load();
+if (!state.products) state.products = [];
 let shoppingFollowUpReadyAt = 0;
 let shoppingCaptureMode = false;
 
@@ -1849,6 +1868,83 @@ const Memory = {
   unitFor(name) {
     const key = this.normalizeName(name);
     return key ? state.memory?.unitByName?.[key] || null : null;
+  }
+};
+
+/* ============ STOCK MANAGER ============ */
+const Stock = {
+  // Normalisasi nama produk untuk pencocokan fuzzy
+  normalizeName(name) {
+    return String(name || '').toLowerCase()
+      .replace(/\s+/g, ' ').trim();
+  },
+
+  // Cari produk berdasarkan nama (fuzzy match)
+  find(name) {
+    if (!name) return null;
+    const key = this.normalizeName(name);
+    if (!state.products) state.products = [];
+    // Exact match dulu
+    let found = state.products.find(p => this.normalizeName(p.name) === key);
+    if (found) return found;
+    // Partial match: nama input ada di nama produk atau sebaliknya
+    found = state.products.find(p => {
+      const pn = this.normalizeName(p.name);
+      return pn.includes(key) || key.includes(pn);
+    });
+    return found || null;
+  },
+
+  // Cek stok sebelum jual — return { ok, product, available }
+  checkStock(name, qty, unit) {
+    if (!state.products) state.products = [];
+    const product = this.find(name);
+    if (!product) return { ok: false, reason: 'not_found', product: null, available: 0 };
+    const available = Number(product.stock) || 0;
+    if (available <= 0) return { ok: false, reason: 'empty', product, available: 0 };
+    const needed = Number(qty) || 1;
+    if (available < needed) return { ok: false, reason: 'partial', product, available };
+    return { ok: true, product, available };
+  },
+
+  // Tambah stok (input stok)
+  addStock(name, qty, unit, costPrice) {
+    if (!state.products) state.products = [];
+    let product = this.find(name);
+    const now = new Date().toISOString();
+    if (product) {
+      product.stock = (Number(product.stock) || 0) + Number(qty);
+      if (costPrice) product.costPrice = costPrice;
+      if (unit) product.unit = unit;
+      product.updatedAt = now;
+    } else {
+      product = {
+        id: uid(),
+        name: name.trim(),
+        unit: unit || null,
+        stock: Number(qty),
+        costPrice: costPrice || null,
+        createdAt: now,
+        updatedAt: now
+      };
+      state.products.push(product);
+    }
+    return product;
+  },
+
+  // Kurangi stok setelah jual
+  reduceStock(name, qty) {
+    const product = this.find(name);
+    if (!product) return false;
+    product.stock = Math.max(0, (Number(product.stock) || 0) - Number(qty));
+    product.updatedAt = new Date().toISOString();
+    return true;
+  },
+
+  // Format stok untuk tampilan
+  formatStock(product) {
+    const s = Number(product.stock) || 0;
+    return s + (product.unit ? ' ' + product.unit : '');
   }
 };
 
@@ -2406,6 +2502,22 @@ const TTS = {
     this.speak(kalimat, lang);
   },
 
+  confirmSale(parsed) {
+    const opener = this._opener('id');
+    const name = parsed.name || 'barang';
+    const qty = parsed.qty ? ` ${parsed.qty}${parsed.unit ? ' ' + parsed.unit : ''}` : '';
+    const amount = this._amountToWords(parsed.amount, 'id');
+    this.speak(`${opener} jual ${name}${qty} seharga ${amount}. Sudah benar?`, 'id');
+  },
+
+  confirmStockInput(parsed) {
+    const opener = this._opener('id');
+    const name = parsed.name || 'barang';
+    const qty = parsed.qty ? ` ${parsed.qty}${parsed.unit ? ' ' + parsed.unit : ''}` : '';
+    const amount = parsed.amount ? `, modal ${this._amountToWords(parsed.amount, 'id')}` : '';
+    this.speak(`${opener} input stok ${name}${qty}${amount}. Sudah benar?`, 'id');
+  },
+
   confirmShopping(parsed) {
     if (!parsed.items || parsed.items.length === 0) return;
     const lang   = parsed._lang || Lang.detect(parsed.raw || '');
@@ -2686,6 +2798,10 @@ const NLP = {
     if (/^(catat|ingat|ingat-ingat|note)\s*,?\s*(bahwa|kalau)?/.test(t) || /ingat(?:kan)?\s+saya/.test(t)
       || /^(inget|catet)\b/.test(t) || /^(note|remember|record\s+a\s+note)\b/.test(t)) return 'create_note';
 
+    // ── KASIR: input stok & jual ──
+    if (/^(input|masuk|tambah)\s+stok\b/i.test(t)) return 'input_stock';
+    if (/^(jual|jualkan|catat\s+penjualan|penjualan)\b/i.test(t)) return 'create_sale';
+
     // transaksi — ID + Sunda + Jawa + Inggris
     const incomeKw = /jual|terjual|dapat|terima|dibayar|masuk|uang\s+masuk|dana\s+masuk|kas\s+masuk|penjualan|pendapatan|pemasukan|tambah(?:kan)?\s+pemasukan|tambah(?:kan)?\s+dana|gaji|bonus|modal|modal\s+(?:awal|usaha|kerja)|penambahan\s+modal|tambah(?:kan)?\s+modal|setor(?:kan)?\s+modal|suntik(?:an)?\s+modal|investasi|setoran|dana\s+(?:awal|usaha)|uang\s+kas|top\s*up|ngical|dijual|adol|oleh|ngedol|earn|receive|sell|sold|income|revenue/;
     const expenseKw = /beli|belanja|bayar|keluar|habis|belanjain|meli|tuku|blanja|blanjain|buy|bought|spend|spent|expense|purchase|paid|pay/;
@@ -2735,6 +2851,29 @@ const NLP = {
     return t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   },
 
+  // Ekstrak nama produk dari perintah jual: "jual cat pink standar 2 kg 50000"
+  extractSaleItemName(text) {
+    let t = text.toLowerCase().trim();
+    t = t.replace(/^(jual|jualkan|catat\s+penjualan|penjualan)\s+/i, '');
+    // buang qty+unit dan harga
+    t = t.replace(/\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat|rb|ribu|juta|jt)?/gi, ' ');
+    t = t.replace(/\b(seharga|senilai|harganya|sebesar|harga|rp)\b/gi, ' ');
+    t = t.replace(/\s+/g, ' ').trim().replace(/[.,!?]$/, '').trim();
+    if (!t) return null;
+    return t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  },
+
+  // Ekstrak nama produk dari perintah input stok: "input stok cat pink 100 kg 2.500.000"
+  extractStockItemName(text) {
+    let t = text.toLowerCase().trim();
+    t = t.replace(/^(input|masuk|tambah)\s+stok\s+/i, '');
+    t = t.replace(/\d+(?:[.,]\d+)?\s*(?:kilo|kg|gram|bungkus|pcs|liter|batang|bij|butir|buah|kotak|box|plastik|ikat|rb|ribu|juta|jt)?/gi, ' ');
+    t = t.replace(/\b(seharga|senilai|harganya|sebesar|harga|rp)\b/gi, ' ');
+    t = t.replace(/\s+/g, ' ').trim().replace(/[.,!?]$/, '').trim();
+    if (!t) return null;
+    return t.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  },
+
   normalizeCategory(value, name, intent) {
     const remembered = Memory.categoryFor(name);
     if (remembered) return remembered;
@@ -2779,7 +2918,25 @@ const NLP = {
     const intent = this.detectIntent(text);
     const result = { intent, raw: text, _lang: Lang.detect(text) };
 
-    if (intent === 'create_income' || intent === 'create_expense') {
+    if (intent === 'create_sale') {
+      // "jual cat pink standar 2 kg 50.000"
+      result.name = this.extractSaleItemName(text);
+      result.amount = this.extractAmount(text);
+      const q = this.extractQuantity(text);
+      result.qty = q.qty;
+      result.unit = q.unit || Memory.unitFor(result.name);
+      result.category = 'Penjualan';
+    }
+    else if (intent === 'input_stock') {
+      // "input stok cat pink standar 100 kg 2.500.000"
+      result.name = this.extractStockItemName(text);
+      result.amount = this.extractAmount(text);
+      const q = this.extractQuantity(text);
+      result.qty = q.qty;
+      result.unit = q.unit || Memory.unitFor(result.name);
+      result.category = 'Pembelian Stok';
+    }
+    else if (intent === 'create_income' || intent === 'create_expense') {
       result.name = this.extractItemName(text, intent);
       result.amount = this.extractAmount(text);
       const q = this.extractQuantity(text);
@@ -3223,7 +3380,7 @@ const Intent = {
 
     // Konfirmasi tanpa sentuhan setelah aplikasi membacakan hasil.
     const voiceAnswer = (text || '').toLowerCase().trim();
-    const confirmable = this.pendingBatch || (this.pendingResult && ['create_income', 'create_expense', 'create_shopping_list'].includes(this.pendingResult.intent));
+    const confirmable = this.pendingBatch || (this.pendingResult && ['create_income', 'create_expense', 'create_shopping_list', 'create_sale', 'input_stock'].includes(this.pendingResult.intent));
     if (confirmable && /^(ya|iya|oke|ok|benar|betul|simpan|lanjutkan|yes|sudah\s+benar)\b/.test(voiceAnswer)) {
       if (this.pendingBatch) saveBatch();
       else if (this.pendingResult.intent === 'create_shopping_list') saveShoppingList();
@@ -3302,6 +3459,12 @@ const Intent = {
     console.log('[Intent]', parsed);
 
     switch (parsed.intent) {
+      case 'create_sale':
+        this.showSaleConfirm(parsed);
+        break;
+      case 'input_stock':
+        this.showStockInputConfirm(parsed);
+        break;
       case 'create_income':
       case 'create_expense': {
         // coba dulu apakah kalimat berisi beberapa item sekaligus
@@ -3500,7 +3663,114 @@ const Intent = {
     });
     DB.save(state);
     showToast('Catatan tersimpan ✓');
-    closeConfirm();
+  },
+
+  // ── KASIR: tampilkan konfirmasi jual ──
+  showSaleConfirm(parsed) {
+    closeVoiceModal();
+    if (!parsed.name) {
+      TTS.speak('Sebutkan nama produk yang dijual.', 'id');
+      showToast('Nama produk tidak terdeteksi');
+      return;
+    }
+    if (!parsed.amount) {
+      TTS.speak('Sebutkan harga jualnya.', 'id');
+      showToast('Harga jual tidak terdeteksi');
+      return;
+    }
+
+    // Cek stok sebelum tampilkan konfirmasi
+    const needed = parsed.qty || 1;
+    const check = Stock.checkStock(parsed.name, needed, parsed.unit);
+
+    if (check.reason === 'empty') {
+      const msg = `Stok ${parsed.name} kosong`;
+      showToast('⚠️ ' + msg);
+      TTS.speak(msg, 'id');
+      return;
+    }
+
+    // Stok kurang — tawarkan jual sebagian
+    if (check.reason === 'partial') {
+      parsed._partialQty = check.available;
+      parsed._originalQty = needed;
+      const unit = parsed.unit || check.product?.unit || '';
+      const msg = `Stok ${parsed.name} hanya ${check.available}${unit ? ' ' + unit : ''}, jual ${check.available}${unit ? ' ' + unit : ''} saja?`;
+      TTS.speak(msg, 'id');
+      showToast(`Stok hanya ${check.available}${unit ? ' ' + unit : ''}`);
+      // Adjust parsed untuk partial
+      const ratio = check.available / needed;
+      parsed.qty = check.available;
+      parsed.amount = Math.round(parsed.amount * ratio);
+    }
+
+    // Tidak ditemukan di stok — boleh tetap jual tapi beri peringatan
+    if (check.reason === 'not_found') {
+      showToast('⚠️ Produk belum ada di stok, transaksi tetap dicatat');
+    }
+
+    const body    = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Konfirmasi Penjualan';
+    document.getElementById('confirmSub').textContent = check.ok
+      ? `Stok tersedia: ${Stock.formatStock(check.product)}`
+      : (check.reason === 'not_found' ? 'Produk belum ada di katalog stok' : 'Stok disesuaikan');
+
+    let html = `<div class="confirm-card">`;
+    html += `<div class="confirm-type in">Penjualan</div>`;
+    html += `<div class="confirm-name">${escapeHtml(parsed.name)}</div>`;
+    if (parsed.qty) html += `<div class="confirm-detail">${parsed.qty} ${parsed.unit || ''}</div>`;
+    html += `<div class="confirm-amount">${formatRupiah(parsed.amount)}</div>`;
+    html += `<div class="confirm-category">Kategori: Penjualan</div>`;
+    if (check.ok && check.product) {
+      const afterSale = check.available - (parsed.qty || 1);
+      html += `<div class="confirm-category" style="color:#6b7280;">Sisa stok setelah jual: ${afterSale}${parsed.unit ? ' ' + parsed.unit : ''}</div>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+    actions.innerHTML = '';
+    this.pendingResult = { ...parsed, intent: 'create_sale' };
+    openModal('confirmModal');
+    startConfirmAfterTTS(() => TTS.confirmSale(parsed));
+  },
+
+  // ── KASIR: tampilkan konfirmasi input stok ──
+  showStockInputConfirm(parsed) {
+    closeVoiceModal();
+    if (!parsed.name) {
+      TTS.speak('Sebutkan nama produk dan jumlah stoknya.', 'id');
+      showToast('Nama produk tidak terdeteksi');
+      return;
+    }
+    if (!parsed.qty) {
+      TTS.speak('Sebutkan jumlah stok yang diinput.', 'id');
+      showToast('Jumlah stok tidak terdeteksi');
+      return;
+    }
+
+    const existing = Stock.find(parsed.name);
+    const body    = document.getElementById('confirmBody');
+    const actions = document.getElementById('confirmActions');
+    document.getElementById('confirmTitle').textContent = 'Konfirmasi Input Stok';
+    document.getElementById('confirmSub').textContent = existing
+      ? `Stok saat ini: ${Stock.formatStock(existing)}`
+      : 'Produk baru — akan dibuat di katalog';
+
+    let html = `<div class="confirm-card">`;
+    html += `<div class="confirm-type shopping">Input Stok</div>`;
+    html += `<div class="confirm-name">${escapeHtml(parsed.name)}</div>`;
+    html += `<div class="confirm-detail">+${parsed.qty}${parsed.unit ? ' ' + parsed.unit : ''}</div>`;
+    if (parsed.amount) html += `<div class="confirm-amount">${formatRupiah(parsed.amount)}</div>`;
+    if (existing) {
+      const afterInput = (Number(existing.stock) || 0) + Number(parsed.qty);
+      html += `<div class="confirm-category" style="color:#6b7280;">Stok setelah input: ${afterInput}${parsed.unit ? ' ' + parsed.unit : ''}</div>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+    actions.innerHTML = '';
+    this.pendingResult = { ...parsed, intent: 'input_stock' };
+    openModal('confirmModal');
+    startConfirmAfterTTS(() => TTS.confirmStockInput(parsed));
   },
 
   showQuery(period) {
@@ -3775,6 +4045,76 @@ function handleFollowUp(text, pending) {
 }
 
 /* ============ 6. SAVE ACTIONS ============ */
+
+function saveSale() {
+  const p = Intent.pendingResult;
+  if (!p || !p.name || !p.amount) {
+    closeConfirm();
+    showToast('Data penjualan belum lengkap');
+    return;
+  }
+  const tx = {
+    id: uid(),
+    date: new Date().toISOString(),
+    type: 'income',
+    name: p.name,
+    qty: p.qty || null,
+    unit: p.unit || null,
+    amount: p.amount,
+    category: 'Penjualan',
+    source: 'voice',
+    createdAt: new Date().toISOString()
+  };
+  state.transactions.unshift(tx);
+  Memory.rememberTransaction(tx);
+  // Kurangi stok
+  if (p.qty) Stock.reduceStock(p.name, p.qty);
+  DB.save(state);
+  SupabaseSync.pushTransaction(tx);
+  closeConfirm();
+  resetHomeVoiceUI();
+  const qtyLabel = p.qty ? ` ${p.qty}${p.unit ? ' ' + p.unit : ''}` : '';
+  showToast(`✓ Terjual: ${p.name}${qtyLabel}`);
+  renderAll();
+  TTS.speak(`${p.name} berhasil dicatat sebagai penjualan.`, 'id');
+}
+
+function saveStockInput() {
+  const p = Intent.pendingResult;
+  if (!p || !p.name || !p.qty) {
+    closeConfirm();
+    showToast('Data stok belum lengkap');
+    return;
+  }
+  // Tambah stok ke katalog produk
+  Stock.addStock(p.name, p.qty, p.unit, p.amount);
+  // Catat sebagai pengeluaran (pembelian stok) jika ada harga
+  if (p.amount) {
+    const tx = {
+      id: uid(),
+      date: new Date().toISOString(),
+      type: 'expense',
+      name: 'Stok ' + p.name,
+      qty: p.qty,
+      unit: p.unit || null,
+      amount: p.amount,
+      category: 'Pembelian Stok',
+      source: 'voice',
+      createdAt: new Date().toISOString()
+    };
+    state.transactions.unshift(tx);
+    Memory.rememberTransaction(tx);
+    SupabaseSync.pushTransaction(tx);
+  }
+  DB.save(state);
+  closeConfirm();
+  resetHomeVoiceUI();
+  const qtyLabel = `${p.qty}${p.unit ? ' ' + p.unit : ''}`;
+  showToast(`✓ Stok ${p.name}: +${qtyLabel}`);
+  renderAll();
+  TTS.speak(`Stok ${p.name} bertambah ${qtyLabel}.`, 'id');
+}
+
 function saveBatch() {
   const items = Intent.pendingBatch;
   if (!items || items.length === 0) {
@@ -3807,6 +4147,7 @@ function saveBatch() {
   resetHomeVoiceUI();
   showToast(`${items.length} transaksi berhasil dicatat ✓`);
   renderAll();
+  TTS.speak(`${items.length} transaksi berhasil dicatat.`, 'id');
 }
 
 function removeBatchItem(idx) {
@@ -3855,6 +4196,7 @@ function saveTransaction() {
   resetHomeVoiceUI();
   showToast('Berhasil dicatat ✓');
   renderAll();
+  TTS.speak('Berhasil dicatat.', 'id');
 }
 
 function resetHomeVoiceUI() {
@@ -3918,8 +4260,75 @@ function renderAll() {
   renderHome();
   renderNotes();
   renderShopping();
+  renderStock();
   renderRecap();
   renderSettings();
+}
+
+function renderStock() {
+  const list = document.getElementById('stockList');
+  if (!list) return;
+  if (!state.products) state.products = [];
+  if (state.products.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">📦</div><div class="msg">Belum ada stok.<br/>Ucapkan "input stok [nama] [qty] [harga]".</div></div>`;
+    return;
+  }
+  // Sort: stok kosong paling bawah
+  const sorted = [...state.products].sort((a, b) => {
+    const sa = Number(a.stock) || 0, sb = Number(b.stock) || 0;
+    if (sa === 0 && sb > 0) return 1;
+    if (sb === 0 && sa > 0) return -1;
+    return a.name.localeCompare(b.name);
+  });
+  let html = '';
+  for (const p of sorted) {
+    const stock = Number(p.stock) || 0;
+    const stockLabel = stock + (p.unit ? ' ' + p.unit : '');
+    const isEmpty = stock <= 0;
+    const isLow = stock > 0 && stock <= 5;
+    const statusColor = isEmpty ? '#ef4444' : (isLow ? '#f59e0b' : '#2a7d6e');
+    const statusBg = isEmpty ? '#fee2e2' : (isLow ? '#fef3c7' : '#d1fae5');
+    html += `<div class="tx-item" onclick="showProductDetail('${p.id}')">
+      <div class="tx-icon" style="background:${statusBg}; color:${statusColor};">📦</div>
+      <div class="tx-body">
+        <div class="tx-name">${escapeHtml(p.name)}</div>
+        <div class="tx-meta">${p.costPrice ? 'Modal: ' + formatRupiah(p.costPrice) : 'Harga modal belum dicatat'}</div>
+      </div>
+      <div class="tx-amount" style="color:${statusColor}; font-size:14px;">${isEmpty ? 'KOSONG' : stockLabel}</div>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+
+function showProductDetail(id) {
+  const p = state.products.find(x => x.id === id);
+  if (!p) return;
+  const stock = Number(p.stock) || 0;
+  const body = document.getElementById('confirmBody');
+  const actions = document.getElementById('confirmActions');
+  document.getElementById('confirmTitle').textContent = 'Detail Produk';
+  document.getElementById('confirmSub').textContent = 'Diperbarui ' + formatDate(p.updatedAt || p.createdAt);
+  let html = `<div class="confirm-card">
+    <div class="confirm-type ${stock > 0 ? 'shopping' : 'out'}">${stock > 0 ? 'Stok Tersedia' : 'Stok Kosong'}</div>
+    <div class="confirm-name">${escapeHtml(p.name)}</div>
+    <div class="confirm-detail">Stok: ${stock}${p.unit ? ' ' + p.unit : ''}</div>
+    ${p.costPrice ? `<div class="confirm-amount">${formatRupiah(p.costPrice)}</div><div class="confirm-category">Harga modal per input</div>` : ''}
+  </div>`;
+  body.innerHTML = html;
+  actions.innerHTML = `
+    <button class="btn btn-danger" onclick="deleteProduct('${p.id}')">Hapus</button>
+    <button class="btn btn-primary" onclick="closeConfirm()">Tutup</button>
+  `;
+  openModal('confirmModal');
+}
+
+function deleteProduct(id) {
+  if (!confirm('Hapus produk ini dari katalog stok?')) return;
+  state.products = state.products.filter(p => p.id !== id);
+  DB.save(state);
+  closeConfirm();
+  showToast('Produk dihapus dari stok');
+  renderAll();
 }
 
 function renderHome() {
@@ -4219,7 +4628,7 @@ function clearAllData() {
 /* ============ 9. NAVIGATION ============ */
 const PAGE_LABELS = {
   home: 'Suara', summary: 'Ringkasan',
-  notes: 'Catatan', shopping: 'Belanja', settings: 'Lainnya'
+  notes: 'Catatan', shopping: 'Belanja', stock: 'Stok', settings: 'Lainnya'
 };
 function goTo(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4578,7 +4987,7 @@ function armConfirmSilenceTimers() {
 }
 
 function scheduleConfirmRestart(delay = 100) {
-  if (!(Intent.pendingResult || Intent.pendingBatch) || !document.getElementById('confirmModal')?.classList.contains('active')) return;
+  if (!(Intent.pendingResult || Intent.pendingBatch) || !ConfirmBanner._showing) return;
   if (Intent._confirmRestartTimeout) clearTimeout(Intent._confirmRestartTimeout);
   Intent._confirmRestartTimeout = setTimeout(() => {
     Intent._confirmRestartTimeout = null;
@@ -4698,15 +5107,15 @@ function confirmByVoice() {
     if (_confirmBuffer) {
       const alts = [_confirmBuffer];
       _confirmBuffer = '';
-      // Cek apakah modal masih aktif sebelum proses
-      if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+      // Cek apakah banner masih aktif sebelum proses
+      if ((Intent.pendingResult || Intent.pendingBatch) && ConfirmBanner._showing) {
         handleConfirmVoice(alts);
         return; // jangan restart mic, handleConfirmVoice yang lanjutkan
       }
     }
 
-    // Restart mic selama modal masih aktif dan pending masih ada
-    if ((Intent.pendingResult || Intent.pendingBatch) && document.getElementById('confirmModal')?.classList.contains('active')) {
+    // Restart mic selama banner masih aktif dan pending masih ada
+    if ((Intent.pendingResult || Intent.pendingBatch) && ConfirmBanner._showing) {
       scheduleConfirmRestart(100);
     }
   };
@@ -4759,6 +5168,8 @@ function handleConfirmVoice(alts) {
     } else if (Intent.pendingResult) {
       const intent = Intent.pendingResult.intent;
       if (intent === 'create_shopping_list') saveShoppingList();
+      else if (intent === 'create_sale') saveSale();
+      else if (intent === 'input_stock') saveStockInput();
       else saveTransaction();
     }
   } else if (rejected) {
